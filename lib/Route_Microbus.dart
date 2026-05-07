@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Map.dart';
 
-
 void main() {
   runApp(const MyApp());
 }
@@ -24,7 +23,13 @@ class MyApp extends StatelessWidget {
 }
 
 class RouteDetailsScreen extends StatefulWidget {
-  const RouteDetailsScreen({super.key});
+  // ✅ بتاخد routeData من Compare Screen
+  final Map<String, dynamic> routeData;
+
+  const RouteDetailsScreen({
+    super.key,
+    this.routeData = const {},
+  });
 
   @override
   State<RouteDetailsScreen> createState() => _RouteDetailsScreenState();
@@ -35,6 +40,11 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // استخرج البيانات من routeData لو موجودة
+    final totalTime  = widget.routeData['total_time_min']?.toString()   ?? '40';
+    final totalPrice = widget.routeData['total_price_egp']?.toString()  ?? '20';
+    final steps      = widget.routeData['steps'] as List<dynamic>?      ?? [];
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -42,85 +52,88 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
         centerTitle: true,
         title: const Text(
           "Route Details",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        leading: const Icon(Icons.arrow_back, color: Colors.black),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSummaryCard(),
+            _buildSummaryCard(totalTime, totalPrice),
             const SizedBox(height: 25),
             const Text(
               "Your Route",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
 
-            _buildRouteStep(
-              stepNumber: "1",
-              iconColor: Colors.blue,
-              icon: Icons.directions_bus,
-              title: "Ride microbus",
-              fromText: "Hyper One Station",
-              toText: "Ramses",
-              time: "35 min",
-              cost: "15 EGP",
-            ),
-
-            _buildRouteStep(
-              stepNumber: "2",
-              iconColor: Colors.deepPurple,
-              icon: Icons.airport_shuttle,
-              title: "Then ride microbus",
-              fromText: "Ramses",
-              toText: "Maadi",
-              time: "25 min",
-              cost: "12 EGP",
-            ),
+            // لو في steps من الـ API اعرضهم ديناميكي
+            if (steps.isNotEmpty)
+              ...steps.asMap().entries.map((entry) {
+                final index = entry.key;
+                final step  = entry.value as Map<String, dynamic>;
+                return _buildRouteStep(
+                  stepNumber: '${index + 1}',
+                  iconColor: _getTypeColor(step['type']?.toString() ?? ''),
+                  icon:      _getTypeIcon(step['type']?.toString() ?? ''),
+                  title:     'Ride ${step['type'] ?? ''}',
+                  fromText:  step['from']?.toString() ?? '',
+                  toText:    step['to']?.toString() ?? '',
+                  time:      '${step['time_min']} min',
+                  cost:      '${step['price_egp']} EGP',
+                );
+              })
+            // لو مفيش steps اعرض الهاردكودد القديم
+            else ...[
+              _buildRouteStep(
+                stepNumber: "1",
+                iconColor: Colors.blue,
+                icon: Icons.directions_bus,
+                title: "Ride microbus",
+                fromText: "Hyper One Station",
+                toText: "Ramses",
+                time: "35 min",
+                cost: "15 EGP",
+              ),
+              _buildRouteStep(
+                stepNumber: "2",
+                iconColor: Colors.deepPurple,
+                icon: Icons.airport_shuttle,
+                title: "Then ride microbus",
+                fromText: "Ramses",
+                toText: "Maadi",
+                time: "25 min",
+                cost: "12 EGP",
+              ),
+            ],
 
             _buildFinalStep(),
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
-        onTap: (value) {
-          setState(() {
-            _selectedIndex = value;
-          });
-        },
+        onTap: (value) => setState(() => _selectedIndex = value),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Profile",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car),
-            label: "Ride",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: "Ride"),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
         ],
       ),
     );
   }
 
-  // ✅ UPDATED SUMMARY CARD
-  Widget _buildSummaryCard() {
+  // ══════════════════════════════════════════════
+  // Summary Card مع زرار View on Map
+  // ══════════════════════════════════════════════
+  Widget _buildSummaryCard(String totalTime, String totalPrice) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -133,45 +146,44 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundColor: Colors.blue,
                     child: Icon(Icons.access_time, color: Colors.white),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Estimated Time",
+                      const Text("Estimated Time",
                           style: TextStyle(color: Colors.blue, fontSize: 12)),
-                      SizedBox(height: 5),
-                      Text("40 min",
-                          style: TextStyle(
+                      const SizedBox(height: 5),
+                      Text("$totalTime min",
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 16)),
                     ],
-                  )
+                  ),
                 ],
               ),
               Container(height: 40, width: 1, color: Colors.grey.shade300),
               Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundColor: Colors.deepPurple,
                     child: Icon(Icons.wallet, color: Colors.white),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Estimated Cost",
-                          style: TextStyle(
-                              color: Colors.deepPurple, fontSize: 12)),
-                      SizedBox(height: 5),
-                      Text("20 EGP",
-                          style: TextStyle(
+                      const Text("Estimated Cost",
+                          style: TextStyle(color: Colors.deepPurple, fontSize: 12)),
+                      const SizedBox(height: 5),
+                      Text("$totalPrice EGP",
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 16)),
                     ],
-                  )
+                  ),
                 ],
               ),
             ],
@@ -179,7 +191,7 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
 
           const SizedBox(height: 15),
 
-          // 🔥 NEW BUTTON
+          // ✅ زرار View Route on Map — مع routeData صح
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -187,10 +199,10 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (_, _, _) {
-                      return MapScreen();
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return MapScreen(routeData: widget.routeData);
                     },
-                    transitionsBuilder: (_, animation, _, child) {
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       return FadeTransition(opacity: animation, child: child);
                     },
                   ),
@@ -199,23 +211,41 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
               icon: const Icon(Icons.map, color: Colors.blue),
               label: const Text(
                 "View Route on Map",
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 side: const BorderSide(color: Colors.blue),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  // ══════════════════════════════════════════════
+  // بيرجع لون حسب نوع المواصلة
+  // ══════════════════════════════════════════════
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'metro':    return Colors.blue;
+      case 'bus':      return Colors.green;
+      case 'microbus': return Colors.orange;
+      default:         return Colors.deepPurple;
+    }
+  }
+
+  // بيرجع أيقونة حسب نوع المواصلة
+  IconData _getTypeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'metro':    return Icons.directions_subway;
+      case 'bus':      return Icons.directions_bus;
+      case 'microbus': return Icons.airport_shuttle;
+      default:         return Icons.directions;
+    }
   }
 
   Widget _buildRouteStep({
@@ -248,13 +278,8 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
                     child: CircleAvatar(
                       radius: 10,
                       backgroundColor: iconColor,
-                      child: Text(
-                        stepNumber,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                        ),
-                      ),
+                      child: Text(stepNumber,
+                          style: const TextStyle(color: Colors.white, fontSize: 11)),
                     ),
                   ),
                 ],
@@ -293,8 +318,7 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
                       style: const TextStyle(color: Colors.blue)),
                   const SizedBox(height: 4),
                   Text("to $toText",
-                      style:
-                      const TextStyle(color: Colors.deepPurple)),
+                      style: const TextStyle(color: Colors.deepPurple)),
                   const SizedBox(height: 15),
                   Row(
                     children: [
@@ -306,7 +330,7 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
                       const SizedBox(width: 5),
                       Text(cost),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -346,19 +370,14 @@ class _RouteDetailsScreenState extends State<RouteDetailsScreen> {
                   children: [
                     Text("You arrived",
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16)),
+                            fontWeight: FontWeight.bold, fontSize: 16)),
                     SizedBox(height: 5),
-                    Text(
-                      "successfully!",
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text("successfully!",
+                        style: TextStyle(
+                            color: Colors.green, fontWeight: FontWeight.bold)),
                   ],
                 ),
-                Text("🎉", style: TextStyle(fontSize: 24))
+                Text("🎉", style: TextStyle(fontSize: 24)),
               ],
             ),
           ),
