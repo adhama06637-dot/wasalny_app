@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'Profile.dart';
 import 'Compare_Screen.dart';
 import 'api_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,8 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
- 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,18 +100,21 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Color(0xFF1E1E2D),
                             ),
                           ),
+                          // هنا تم تصليح الإيرور بتاع فايربيز والأقواس
                           Row(
-                            children: const [
+                            children: [
                               Text(
-                                'Sara ',
-                                style: TextStyle(
+                                FirebaseAuth.instance.currentUser?.displayName ?? 
+                                FirebaseAuth.instance.currentUser?.email?.split('@')[0] ?? 
+                                'User',
+                                style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF303099),
                                 ),
                               ),
-                              Text(
-                                '👋',
+                              const Text(
+                                ' 👋',
                                 style: TextStyle(fontSize: 24),
                               ),
                             ],
@@ -251,9 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                        child: ElevatedButton(
-                          // خلينا الـ onPressed هنا async عشان هنستنى السيرفر
                           onPressed: () async {
-                            // 1. نطلع رسالة لليوزر إننا بنحمل
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Searching for the best routes... 🚀'),
@@ -261,13 +261,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
 
-                            // 2. نكلم الـ API بتاعنا بالـ From والـ To
                             final compareData = await ApiService.getCompareRoutes(
                               _selectedFrom ?? 'Hyper One Station', 
                               _selectedTo ?? 'Maadi'
                             );
 
-                            // 3. نبعت الداتا لشاشة المقارنة بعد ما السيرفر يرد
                             if (context.mounted) {
                               Navigator.push(
                                 context,
@@ -313,29 +311,28 @@ class _HomeScreenState extends State<HomeScreen> {
       // Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentNavIndex,
-       onTap: (index) {
+        onTap: (index) {
           setState(() {
-          _currentNavIndex = index;
-           }
-          );
+            _currentNavIndex = index;
+          });
 
-             if (index == 0) {
-              Navigator.push(
+          if (index == 0) {
+            Navigator.push(
               context,
               MaterialPageRoute(
-              builder: (context) => const ProfilePage(),
+                builder: (context) => const ProfilePage(),
               ),
-           );
-         }
-         if (index == 2) {
-          Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-             ),
-           );
-        }
-      },
+            );
+          }
+          if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+            );
+          }
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color.fromARGB(255, 11, 43, 90),
         unselectedItemColor: Colors.grey.shade400,
@@ -430,4 +427,4 @@ class LocationDropdownField extends StatelessWidget {
       ),
     );
   }
-}  
+}
