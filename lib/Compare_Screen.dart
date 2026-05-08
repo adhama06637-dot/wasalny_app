@@ -279,7 +279,7 @@ class SharedRideCard extends StatelessWidget {
     final seats        = ride['available_seats']?.toString()   ?? '--';
     final driverName   = ride['driver_name']?.toString()       ?? 'Unknown';
     final genderPref   = ride['gender_preference']?.toString() ?? 'any';
-    final ridesCount   = ride['all_rides_count'] as int?        ?? 1;
+    final ridesCount   = ride['all_rides_count'] as int?       ?? 1;
     final pickupPoints = ride['pickup_points']   as List<dynamic>? ?? [];
 
     Color  genderColor = Colors.blue;
@@ -386,7 +386,7 @@ class _Chip extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════
-// شاشة تفاصيل المسار + زرار Start Trip
+// شاشة تفاصيل المسار + زرار الخريطة الأخضر
 // ══════════════════════════════════════════════
 class RouteDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> routeData;
@@ -427,7 +427,7 @@ class RouteDetailsScreen extends StatelessWidget {
         centerTitle: true,
       ),
 
-      // ── زرار Start Trip ──
+      // ── الزرار الأخضر الجديد ──
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: SizedBox(
@@ -438,14 +438,14 @@ class RouteDetailsScreen extends StatelessWidget {
               MaterialPageRoute(
                   builder: (_) => MapScreen(routeData: routeData)),
             ),
-            icon: const Icon(Icons.navigation, color: Colors.white),
-            label: const Text('Start Trip',
+            icon: const Icon(Icons.map, color: Colors.white),
+            label: const Text('Select & Show on Map',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF303099),
+              backgroundColor: const Color(0xFF00E676), // اللون الأخضر بتاع الخريطة
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
             ),
@@ -472,8 +472,9 @@ class RouteDetailsScreen extends StatelessWidget {
                   Container(width: 1, height: 40, color: Colors.grey.shade300),
                   _SummaryItem(icon: Icons.straighten, label: 'Distance', value: '$totalDist km'),
                 ],
-              ),
+             ),
             ),
+
 
             if (isRushHour) ...[
               const SizedBox(height: 12),
