@@ -28,18 +28,62 @@ class _MapScreenState extends State<MapScreen> {
   LocationData? _currentLocation;
   StreamSubscription<LocationData>? _locationSubscription;
   bool _isTracking = false;
+  
+  // متغيرات التتبع الذكي
+  Timer? _trackingTimer;
+  String _trackStatus = 'on_track';
 
   @override
   void initState() {
     super.initState();
     _loadRoute();
     _initLocation(); 
+    _startLiveTracking(); // بدء التتبع عند فتح الشاشة
   }
 
   @override
   void dispose() {
     _locationSubscription?.cancel(); 
+    _trackingTimer?.cancel(); // إيقاف التايمر عند إغلاق الشاشة لمنع استهلاك البطارية والنت
     super.dispose();
+  }
+
+  // دالة التتبع الحي وإعادة الحساب (Recalculation Logic)
+  void _startLiveTracking() {
+    _trackingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (_currentLocation != null && _isTracking) {
+        try {
+          final path = widget.routeData['path'] as List<dynamic>? ?? [];
+          
+          final response = await http.post(
+            Uri.parse('https://wasalny-phi.vercel.app/track'), // ⚠️ ضع رابط سيرفرك هنا
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'current_location': '${_currentLocation!.latitude},${_currentLocation!.longitude}',
+              'destination': endName,
+              'current_path': path,
+            }),
+          );
+          
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            setState(() {
+              _trackStatus = data['status'];
+            });
+
+            if (data['status'] == 'off_route') {
+              print("Warning: Off Route! Recalculating path...");
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Off route! Recalculating... 🔄'), duration: Duration(seconds: 2)),
+              );
+              _loadRoute(); // إعادة تحميل المسار بناءً على الموقع الجديد
+            }
+          }
+        } catch (e) {
+          debugPrint('Tracking API error: $e');
+        }
+      }
+    });
   }
 
   Future<void> _initLocation() async {
@@ -193,13 +237,25 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
           if (isLoading) const Center(child: CircularProgressIndicator(color: Color(0xFF00E676))),
+          
+          // ويدجت الحالة (اختياري لمتابعة الـ Recalculation)
+          if (_isTracking)
+            Positioned(
+              top: 10, left: 10,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                color: Colors.black54,
+                child: Text('Status: $_trackStatus', style: const TextStyle(color: Colors.white)),
+              ),
+            ),
+
           if (_currentLocation != null && !_isTracking && !isLoading && errorMessage == null)
             Positioned(
               right: 16, bottom: 180,
               child: FloatingActionButton(
                 backgroundColor: Colors.white,
                 onPressed: () {
-                  setState(() => _isTracking = true);
+                  setState(() { _isTracking = true; });
                   _mapController.move(LatLng(_currentLocation!.latitude!, _currentLocation!.longitude!), 17.0);
                 },
                 child: const Icon(Icons.my_location, color: Color(0xFF1E1E2D)),
