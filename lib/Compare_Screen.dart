@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'Map.dart'; // تأكد إن اسم ملف الخريطة صح
+import 'Map.dart'; 
 
 // ══════════════════════════════════════════════
-// شاشة المقارنة (Stateful عشان الـ Bottom Nav يشتغل)
+// شاشة المقارنة الرئيسية
 // ══════════════════════════════════════════════
 class CompareScreen extends StatefulWidget {
   final Map<String, dynamic> compareData;
@@ -15,6 +15,22 @@ class CompareScreen extends StatefulWidget {
 
 class _CompareScreenState extends State<CompareScreen> {
   int _selectedIndex = 0;
+
+  // 🛠️ دالة تظبيط الوقت (ساعات ودقايق) مع حماية ضد الكسور
+  String _formatDuration(dynamic minutesData) {
+    if (minutesData == null || minutesData.toString().isEmpty) return '--';
+    double? parsedValue = double.tryParse(minutesData.toString());
+    if (parsedValue == null) return '--';
+    int minutes = parsedValue.round();
+    
+    if (minutes <= 0) return '1 min';
+    if (minutes < 60) return '$minutes min';
+    
+    int hours = minutes ~/ 60;
+    int remainingMinutes = minutes % 60;
+    String hoursText = hours == 1 ? 'hr' : 'hrs';
+    return remainingMinutes == 0 ? '$hours $hoursText' : '$hours $hoursText $remainingMinutes min';
+  }
 
   String _formatPath(List<dynamic>? path) {
     if (path == null || path.isEmpty) return 'No path';
@@ -29,7 +45,6 @@ class _CompareScreenState extends State<CompareScreen> {
     final tip        = widget.compareData['tip']?.toString() ?? '';
     final samePath   = widget.compareData['same_path']   as bool? ?? false;
 
-    // حساب عدد الخيارات المتاحة (لوجيك أدهم)
     int optionsCount = 0;
     if (fastest != null) optionsCount++;
     if (!samePath && cheapest != null) optionsCount++;
@@ -52,8 +67,7 @@ class _CompareScreenState extends State<CompareScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ── Toggle Compare/Details (شغل أدهم) ──
+            // Toggle Compare/Details
             Container(
               decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -85,7 +99,6 @@ class _CompareScreenState extends State<CompareScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ── Tip Banner ──
             if (tip.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(14),
@@ -112,14 +125,14 @@ class _CompareScreenState extends State<CompareScreen> {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // ── كارت الأسرع (ديزاين سارة) ──
+            // كارت الأسرع
             if (fastest != null) ...[
               RouteOptionCard(
                 badgeText: 'Fastest ⚡',
                 badgeColor: Colors.green,
-                icon: Icons.directions_subway,
+                icon: Icons.bolt,
                 iconColor: const Color(0xFF1565C0),
-                time: '${fastest['total_time_min']} min',
+                time: _formatDuration(fastest['total_time_min']),
                 price: '${fastest['total_price_egp']} EGP',
                 path: _formatPath(fastest['path'] as List<dynamic>?),
                 onTap: () => Navigator.push(context,
@@ -128,14 +141,14 @@ class _CompareScreenState extends State<CompareScreen> {
               const SizedBox(height: 12),
             ],
 
-            // ── كارت الأرخص (لو مختلف عن الأسرع - ديزاين سارة) ──
+            // كارت الأرخص
             if (!samePath && cheapest != null) ...[
               RouteOptionCard(
                 badgeText: 'Cheapest 💰',
                 badgeColor: Colors.orange,
                 icon: Icons.directions_bus,
                 iconColor: const Color(0xFF6C63FF),
-                time: '${cheapest['total_time_min']} min',
+                time: _formatDuration(cheapest['total_time_min']),
                 price: '${cheapest['total_price_egp']} EGP',
                 path: _formatPath(cheapest['path'] as List<dynamic>?),
                 onTap: () => Navigator.push(context,
@@ -144,13 +157,11 @@ class _CompareScreenState extends State<CompareScreen> {
               const SizedBox(height: 12),
             ],
 
-            // ── كارت الرايد شيرينج (ديزاين سارة) ──
             if (sharedRide != null) ...[
               SharedRideCard(ride: sharedRide),
               const SizedBox(height: 12),
             ],
 
-            // ── لو مفيش رايد شيرينج ──
             if (sharedRide == null)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -169,7 +180,7 @@ class _CompareScreenState extends State<CompareScreen> {
                         children: [
                           Text('No shared rides available',
                               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                          Text('Check back later or create a ride',
+                          Text('Check back later',
                               style: TextStyle(color: Colors.grey, fontSize: 12)),
                         ],
                       ),
@@ -198,7 +209,7 @@ class _CompareScreenState extends State<CompareScreen> {
 }
 
 // ══════════════════════════════════════════════
-// كارت المسار العادي (ديزاين سارة)
+// كارت خيار المسار 
 // ══════════════════════════════════════════════
 class RouteOptionCard extends StatelessWidget {
   final String badgeText;
@@ -269,7 +280,7 @@ class RouteOptionCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════
-// كارت الرايد شيرينج (ديزاين سارة)
+// كارت الرايد شيرينج
 // ══════════════════════════════════════════════
 class SharedRideCard extends StatelessWidget {
   final Map<String, dynamic> ride;
@@ -282,7 +293,20 @@ class SharedRideCard extends StatelessWidget {
     final seats          = ride['available_seats']?.toString() ?? '--';
     final driverName     = ride['driver_id']?.toString() ?? 'Driver';
     final genderPref     = ride['gender_preference']?.toString() ?? 'any';
-    final timeMin        = ride['time_min']?.toString() ?? '--';
+    
+    // تظبيط وقت الرايد شيرينج كمان
+    double? parsedValue = double.tryParse(ride['time_min']?.toString() ?? '');
+    String timeStr = '--';
+    if (parsedValue != null) {
+      int minutes = parsedValue.round();
+      if (minutes < 60) {
+        timeStr = '$minutes min';
+      } else {
+        int h = minutes ~/ 60;
+        int m = minutes % 60;
+        timeStr = m == 0 ? '$h hr' : '$h hr $m min';
+      }
+    }
 
     Color genderColor = Colors.blue;
     String genderLabel = 'Any Gender';
@@ -329,7 +353,7 @@ class SharedRideCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('$timeMin min Shared Ride', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                    Text('$timeStr Shared Ride', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                     Text('Driver: $driverName', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
@@ -398,23 +422,37 @@ class RouteDetailsScreen extends StatelessWidget {
 
   const RouteDetailsScreen({super.key, required this.routeData});
 
+  // نفس دالة الوقت هنا كمان
+  String _formatDuration(dynamic minutesData) {
+    if (minutesData == null || minutesData.toString().isEmpty) return '--';
+    double? parsedValue = double.tryParse(minutesData.toString());
+    if (parsedValue == null) return '--';
+    int minutes = parsedValue.round();
+    
+    if (minutes <= 0) return '1 min';
+    if (minutes < 60) return '$minutes min';
+    
+    int hours = minutes ~/ 60;
+    int remainingMinutes = minutes % 60;
+    String hoursText = hours == 1 ? 'hr' : 'hrs';
+    return remainingMinutes == 0 ? '$hours $hoursText' : '$hours $hoursText $remainingMinutes min';
+  }
+
   Map<String, dynamic> _getTransportStyle(String type) {
     switch (type.toLowerCase()) {
-      case 'metro':
-        return {'icon': Icons.directions_subway, 'color': const Color(0xFF1565C0)};
       case 'bus':
         return {'icon': Icons.directions_bus, 'color': const Color(0xFF2E7D32)};
       case 'microbus':
         return {'icon': Icons.airport_shuttle, 'color': const Color(0xFFE65100)};
       default:
-        return {'icon': Icons.directions, 'color': Colors.grey};
+        return {'icon': Icons.directions_car, 'color': const Color(0xFF1565C0)};
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final steps      = routeData['steps']              as List<dynamic>? ?? [];
-    final totalTime  = routeData['total_time_min']?.toString()   ?? '--';
+    final totalTime  = _formatDuration(routeData['total_time_min']); 
     final totalPrice = routeData['total_price_egp']?.toString()  ?? '--';
     final totalDist  = routeData['total_distance_km']?.toString() ?? '--';
     final isRushHour = routeData['is_rush_hour']       as bool?    ?? false;
@@ -432,7 +470,6 @@ class RouteDetailsScreen extends StatelessWidget {
         centerTitle: true,
       ),
 
-      // ── زرار الخريطة الأخضر (شغل أدهم الثابت تحت) ──
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: SizedBox(
@@ -462,7 +499,6 @@ class RouteDetailsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Summary Card
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -471,7 +507,7 @@ class RouteDetailsScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _SummaryItem(icon: Icons.access_time, label: 'Time', value: '$totalTime min'),
+                  _SummaryItem(icon: Icons.access_time, label: 'Time', value: totalTime),
                   Container(width: 1, height: 40, color: Colors.grey.shade300),
                   _SummaryItem(icon: Icons.attach_money, label: 'Price', value: '$totalPrice EGP'),
                   Container(width: 1, height: 40, color: Colors.grey.shade300),
@@ -505,7 +541,6 @@ class RouteDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // ── الـ Timeline بتاع سارة الشيك ──
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -544,7 +579,7 @@ class RouteDetailsScreen extends StatelessWidget {
                 final from    = step['from']?.toString() ?? '';
                 final to      = step['to']?.toString() ?? '';
                 final type    = step['type']?.toString() ?? '';
-                final timeMin = step['time_min']?.toString() ?? '--';
+                final timeMin = _formatDuration(step['time_min']); // تطبيق دالة الوقت هنا كمان
                 final price   = step['price_egp']?.toString() ?? '--';
                 final style   = _getTransportStyle(type);
 
@@ -591,7 +626,7 @@ class RouteDetailsScreen extends StatelessWidget {
                               children: [
                                 const Icon(Icons.access_time, size: 14, color: Colors.grey),
                                 const SizedBox(width: 4),
-                                Text('$timeMin min', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                Text(timeMin, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                                 const SizedBox(width: 16),
                                 const Icon(Icons.attach_money, size: 14, color: Colors.grey),
                                 const SizedBox(width: 4),
