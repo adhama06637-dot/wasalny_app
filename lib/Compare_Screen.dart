@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'map.dart';
+import 'Map.dart'; // تأكد إن اسم ملف الخريطة صح
 
 // ══════════════════════════════════════════════
-// شاشة المقارنة
+// شاشة المقارنة (Stateful عشان الـ Bottom Nav يشتغل)
 // ══════════════════════════════════════════════
 class CompareScreen extends StatefulWidget {
   final Map<String, dynamic> compareData;
@@ -16,6 +16,11 @@ class CompareScreen extends StatefulWidget {
 class _CompareScreenState extends State<CompareScreen> {
   int _selectedIndex = 0;
 
+  String _formatPath(List<dynamic>? path) {
+    if (path == null || path.isEmpty) return 'No path';
+    return path.join(' → ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final fastest    = widget.compareData['fastest']     as Map<String, dynamic>?;
@@ -24,6 +29,7 @@ class _CompareScreenState extends State<CompareScreen> {
     final tip        = widget.compareData['tip']?.toString() ?? '';
     final samePath   = widget.compareData['same_path']   as bool? ?? false;
 
+    // حساب عدد الخيارات المتاحة (لوجيك أدهم)
     int optionsCount = 0;
     if (fastest != null) optionsCount++;
     if (!samePath && cheapest != null) optionsCount++;
@@ -47,7 +53,7 @@ class _CompareScreenState extends State<CompareScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // Toggle Compare/Details
+            // ── Toggle Compare/Details (شغل أدهم) ──
             Container(
               decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -79,7 +85,7 @@ class _CompareScreenState extends State<CompareScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Tip Banner
+            // ── Tip Banner ──
             if (tip.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(14),
@@ -106,45 +112,45 @@ class _CompareScreenState extends State<CompareScreen> {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // كارت الأسرع
+            // ── كارت الأسرع (ديزاين سارة) ──
             if (fastest != null) ...[
               RouteOptionCard(
-                badgeText: 'Fastest',
+                badgeText: 'Fastest ⚡',
                 badgeColor: Colors.green,
                 icon: Icons.directions_subway,
-                iconColor: Colors.blue,
+                iconColor: const Color(0xFF1565C0),
                 time: '${fastest['total_time_min']} min',
                 price: '${fastest['total_price_egp']} EGP',
-                leaveTime: 'Fastest Route ⚡',
+                path: _formatPath(fastest['path'] as List<dynamic>?),
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => RouteDetailsScreen(routeData: fastest))),
               ),
               const SizedBox(height: 12),
             ],
 
-            // كارت الأرخص (بس لو المسارين مختلفين)
+            // ── كارت الأرخص (لو مختلف عن الأسرع - ديزاين سارة) ──
             if (!samePath && cheapest != null) ...[
               RouteOptionCard(
-                badgeText: 'Cheapest',
+                badgeText: 'Cheapest 💰',
                 badgeColor: Colors.orange,
                 icon: Icons.directions_bus,
                 iconColor: const Color(0xFF6C63FF),
                 time: '${cheapest['total_time_min']} min',
                 price: '${cheapest['total_price_egp']} EGP',
-                leaveTime: 'Cheapest Route 💰',
+                path: _formatPath(cheapest['path'] as List<dynamic>?),
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => RouteDetailsScreen(routeData: cheapest))),
               ),
               const SizedBox(height: 12),
             ],
 
-            // كارت الرايد شيرينج
+            // ── كارت الرايد شيرينج (ديزاين سارة) ──
             if (sharedRide != null) ...[
               SharedRideCard(ride: sharedRide),
               const SizedBox(height: 12),
             ],
 
-            // لو مفيش رايد شيرينج
+            // ── لو مفيش رايد شيرينج ──
             if (sharedRide == null)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -163,7 +169,7 @@ class _CompareScreenState extends State<CompareScreen> {
                         children: [
                           Text('No shared rides available',
                               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                          Text('Check back later',
+                          Text('Check back later or create a ride',
                               style: TextStyle(color: Colors.grey, fontSize: 12)),
                         ],
                       ),
@@ -192,7 +198,7 @@ class _CompareScreenState extends State<CompareScreen> {
 }
 
 // ══════════════════════════════════════════════
-// كارت المسار العادي
+// كارت المسار العادي (ديزاين سارة)
 // ══════════════════════════════════════════════
 class RouteOptionCard extends StatelessWidget {
   final String badgeText;
@@ -201,7 +207,7 @@ class RouteOptionCard extends StatelessWidget {
   final Color iconColor;
   final String time;
   final String price;
-  final String leaveTime;
+  final String path;
   final VoidCallback onTap;
 
   const RouteOptionCard({
@@ -212,7 +218,7 @@ class RouteOptionCard extends StatelessWidget {
     required this.iconColor,
     required this.time,
     required this.price,
-    required this.leaveTime,
+    required this.path,
     required this.onTap,
   });
 
@@ -245,19 +251,16 @@ class RouteOptionCard extends StatelessWidget {
                     Icon(Icons.emoji_events, color: badgeColor, size: 16),
                     const SizedBox(width: 4),
                     Text(badgeText,
-                        style: TextStyle(
-                            color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold)),
                   ]),
                   const SizedBox(height: 6),
-                  Text(time,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(time, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(leaveTime, style: TextStyle(color: badgeColor, fontSize: 12)),
+                  Text(path, style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
-            Text(price,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(price, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -266,7 +269,7 @@ class RouteOptionCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════
-// كارت الرايد شيرينج
+// كارت الرايد شيرينج (ديزاين سارة)
 // ══════════════════════════════════════════════
 class SharedRideCard extends StatelessWidget {
   final Map<String, dynamic> ride;
@@ -275,17 +278,21 @@ class SharedRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price        = ride['price_egp']?.toString()         ?? '--';
-    final seats        = ride['available_seats']?.toString()   ?? '--';
-    final driverName   = ride['driver_name']?.toString()       ?? 'Unknown';
-    final genderPref   = ride['gender_preference']?.toString() ?? 'any';
-    final ridesCount   = ride['all_rides_count'] as int?       ?? 1;
-    final pickupPoints = ride['pickup_points']   as List<dynamic>? ?? [];
+    final price          = ride['price_egp']?.toString() ?? '--';
+    final seats          = ride['available_seats']?.toString() ?? '--';
+    final driverName     = ride['driver_id']?.toString() ?? 'Driver';
+    final genderPref     = ride['gender_preference']?.toString() ?? 'any';
+    final timeMin        = ride['time_min']?.toString() ?? '--';
 
-    Color  genderColor = Colors.blue;
+    Color genderColor = Colors.blue;
     String genderLabel = 'Any Gender';
-    if (genderPref == 'female') { genderColor = Colors.pink;  genderLabel = 'Female Only 👩'; }
-    else if (genderPref == 'male') { genderColor = Colors.blue; genderLabel = 'Male Only 👨'; }
+    if (genderPref == 'female') {
+      genderColor = Colors.pink;
+      genderLabel = 'Female Only 👩';
+    } else if (genderPref == 'male') {
+      genderColor = Colors.blue;
+      genderLabel = 'Male Only 👨';
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -293,53 +300,53 @@ class SharedRideCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3)),
         borderRadius: BorderRadius.circular(16),
         color: Colors.white,
+        gradient: LinearGradient(
+          colors: [Colors.white, const Color(0xFF6C63FF).withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(color: Color(0xFF6C63FF), shape: BoxShape.circle),
-              child: const Icon(Icons.directions_car, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: const [
-                  Icon(Icons.star, color: Colors.amber, size: 14),
-                  SizedBox(width: 4),
-                  Text('Comfortable 🚗',
-                      style: TextStyle(color: Color(0xFF6C63FF), fontSize: 12, fontWeight: FontWeight.bold)),
-                ]),
-                const SizedBox(height: 4),
-                const Text('Shared Ride',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('Driver: $driverName',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ]),
-            ),
-            Text('$price EGP',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ]),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(color: Color(0xFF6C63FF), shape: BoxShape.circle),
+                child: const Icon(Icons.directions_car, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.star, color: Colors.amber, size: 14),
+                        SizedBox(width: 4),
+                        Text('Comfortable 🚗', style: TextStyle(color: Color(0xFF6C63FF), fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('$timeMin min Shared Ride', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                    Text('Driver: $driverName', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  ],
+                ),
+              ),
+              Text('$price EGP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
           const SizedBox(height: 12),
           const Divider(),
           const SizedBox(height: 8),
-          Row(children: [
-            _Chip(icon: Icons.event_seat, label: '$seats seats', color: Colors.green),
-            const SizedBox(width: 8),
-            _Chip(icon: Icons.person, label: genderLabel, color: genderColor),
-          ]),
-          if (pickupPoints.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text('Pickup: ${pickupPoints.join(', ')}',
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-          if (ridesCount > 1) ...[
-            const SizedBox(height: 6),
-            Text('$ridesCount rides available →',
-                style: const TextStyle(color: Color(0xFF6C63FF), fontSize: 12, fontWeight: FontWeight.w500)),
-          ],
+          Row(
+            children: [
+              _Chip(icon: Icons.event_seat, label: '$seats seats left', color: Colors.green),
+              const SizedBox(width: 8),
+              _Chip(icon: Icons.person, label: genderLabel, color: genderColor),
+            ],
+          ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -354,8 +361,7 @@ class SharedRideCard extends StatelessWidget {
                 backgroundColor: const Color(0xFF6C63FF),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Book This Ride',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Book This Ride', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -374,8 +380,7 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-          color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
@@ -386,7 +391,7 @@ class _Chip extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════
-// شاشة تفاصيل المسار + زرار الخريطة الأخضر
+// شاشة تفاصيل المسار 
 // ══════════════════════════════════════════════
 class RouteDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> routeData;
@@ -427,7 +432,7 @@ class RouteDetailsScreen extends StatelessWidget {
         centerTitle: true,
       ),
 
-      // ── الزرار الأخضر الجديد ──
+      // ── زرار الخريطة الأخضر (شغل أدهم الثابت تحت) ──
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: SizedBox(
@@ -445,7 +450,7 @@ class RouteDetailsScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.white)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E676), // اللون الأخضر بتاع الخريطة
+              backgroundColor: const Color(0xFF00E676),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
             ),
@@ -475,7 +480,6 @@ class RouteDetailsScreen extends StatelessWidget {
              ),
             ),
 
-
             if (isRushHour) ...[
               const SizedBox(height: 12),
               Container(
@@ -493,43 +497,112 @@ class RouteDetailsScreen extends StatelessWidget {
               ),
             ],
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Step by step guide:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text('Your Route',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-            // Steps
+            // ── الـ Timeline بتاع سارة الشيك ──
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: steps.length,
+              itemCount: steps.length + 1,
               itemBuilder: (context, index) {
-                final step  = steps[index] as Map<String, dynamic>;
-                final type  = step['type']?.toString() ?? '';
-                final style = _getTransportStyle(type);
+                if (index == steps.length) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                        child: const Icon(Icons.flag, color: Colors.white),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: const Text('You arrived successfully! 🎉',
+                            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                          color: (style['color'] as Color).withOpacity(0.1),
-                          shape: BoxShape.circle),
-                      child: Icon(style['icon'] as IconData,
-                          color: style['color'] as Color, size: 20),
+                final step    = steps[index] as Map<String, dynamic>;
+                final from    = step['from']?.toString() ?? '';
+                final to      = step['to']?.toString() ?? '';
+                final type    = step['type']?.toString() ?? '';
+                final timeMin = step['time_min']?.toString() ?? '--';
+                final price   = step['price_egp']?.toString() ?? '--';
+                final style   = _getTransportStyle(type);
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(color: style['color'] as Color, shape: BoxShape.circle),
+                          child: Center(child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                        ),
+                        if (index < steps.length - 1)
+                          Container(width: 2, height: 30, color: Colors.grey.shade300),
+                      ],
                     ),
-                    title: Text('From ${step['from']} to ${step['to']}',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    subtitle: Text('$type • ${step['time_min']} min'),
-                    trailing: Text('${step['price_egp']} EGP',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, color: Color(0xFF303099))),
-                  ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(style['icon'] as IconData, color: style['color'] as Color, size: 18),
+                                const SizedBox(width: 6),
+                                Text('Ride $type', style: TextStyle(color: style['color'] as Color, fontWeight: FontWeight.bold, fontSize: 15)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text('from $from', style: const TextStyle(color: Color(0xFF303099), fontSize: 13)),
+                            Text('to $to', style: const TextStyle(color: Color(0xFF303099), fontSize: 13)),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text('$timeMin min', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                const SizedBox(width: 16),
+                                const Icon(Icons.attach_money, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text('$price EGP', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -549,10 +622,11 @@ class _SummaryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      Icon(icon, color: const Color(0xFF303099), size: 22),
+      Icon(icon, color: const Color(0xFF303099), size: 24),
       const SizedBox(height: 4),
-      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-      Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      const SizedBox(height: 2),
+      Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
     ]);
   }
 }
