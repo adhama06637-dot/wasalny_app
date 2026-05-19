@@ -100,11 +100,17 @@ class _RidesScreenState extends State<RidesScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
+    final selectedTransport = provider.selectedTransport;
     final rides = provider.filteredRoutes
-        .where((route) => route.transport_type == 'ride_share')
+        .where((route) => selectedTransport == 'all' || route.transport_type == selectedTransport)
         .map(RideInfo.fromRoute)
         .toList();
-    final visibleRides = rides.isEmpty ? fallbackRides : rides;
+    final visibleRides = rides.isEmpty && (selectedTransport == 'all' || selectedTransport == 'ride_share') ? fallbackRides : rides;
+    final title = selectedTransport == 'bus'
+        ? 'Available Buses'
+        : selectedTransport == 'microbus'
+            ? 'Available Microbuses'
+            : 'Available Rides';
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -116,7 +122,7 @@ class _RidesScreenState extends State<RidesScreen> {
                 onPressed: () => Navigator.pop(context),
               )
             : null,
-        title: const Text('Available Rides', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded),
@@ -129,7 +135,8 @@ class _RidesScreenState extends State<RidesScreen> {
               onPressed: () async {
                 await Navigator.push(context, MaterialPageRoute(builder: (_) => const FilterScreen()));
                 if (!context.mounted) return;
-                await context.read<AppProvider>().searchRoutes(from: fromController.text, to: toController.text, transport: 'ride_share');
+                final provider = context.read<AppProvider>();
+                await provider.searchRoutes(from: fromController.text, to: toController.text, transport: provider.selectedTransport);
               },
             ),
           ),
@@ -157,7 +164,8 @@ class _RidesScreenState extends State<RidesScreen> {
                 icon: const Icon(Icons.search_rounded),
                 label: const Text('Search Rides', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 onPressed: () async {
-                  await context.read<AppProvider>().searchRoutes(from: fromController.text, to: toController.text, transport: 'ride_share');
+                  final provider = context.read<AppProvider>();
+                  await provider.searchRoutes(from: fromController.text, to: toController.text, transport: provider.selectedTransport);
                   if (mounted) setState(() {});
                 },
               ),
@@ -165,16 +173,23 @@ class _RidesScreenState extends State<RidesScreen> {
           ),
           const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: Text('Available Rides', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900))),
+            Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900))),
             const Icon(Icons.near_me_rounded, color: AppColors.secondary, size: 16),
             const SizedBox(width: 4),
             Text('${visibleRides.length} nearby', style: const TextStyle(color: AppColors.secondary, fontSize: 12, fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 12),
-          ...visibleRides.map((ride) => RideCard(
-                ride: ride,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride))),
-              )),
+          if (visibleRides.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: cardDecoration(radius: 15),
+              child: Text('No $title found nearby. Try another route.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+            )
+          else
+            ...visibleRides.map((ride) => RideCard(
+                  ride: ride,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride))),
+                )),
         ],
       ),
     );
