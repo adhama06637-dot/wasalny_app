@@ -17,13 +17,6 @@ class MyRidesScreen extends StatefulWidget {
 class _MyRidesScreenState extends State<MyRidesScreen> {
   int selectedTab = 0;
 
-  static final List<MyRideUi> demoRides = [
-    const MyRideUi(driver: 'Ahmed H.', rating: 4.8, from: 'Nasr City', to: 'Maadi', date: 'Today, 20 May 2024', time: '10:00 AM', price: 80, status: RideStatus.upcoming, avatarColor: Color(0xFFE8F1FF), icon: Icons.person),
-    const MyRideUi(driver: 'Sara M.', rating: 4.9, from: 'Heliopolis', to: 'Maadi', date: 'Tomorrow, 21 May 2024', time: '9:30 AM', price: 70, status: RideStatus.upcoming, avatarColor: Color(0xFFFFEEF4), icon: Icons.person_2),
-    const MyRideUi(driver: 'Mohamed A.', rating: 4.7, from: 'Nasr City', to: 'Maadi', date: '18 May 2024', time: '11:00 AM', price: 90, status: RideStatus.completed, avatarColor: Color(0xFFEAF7F1), icon: Icons.person),
-    const MyRideUi(driver: 'Mostafa K.', rating: 4.6, from: 'Maadi', to: 'Nasr City', date: '15 May 2024', time: '10:30 AM', price: 80, status: RideStatus.cancelled, avatarColor: Color(0xFFFFF3E7), icon: Icons.person),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
@@ -71,19 +64,19 @@ class _MyRidesScreenState extends State<MyRidesScreen> {
 
   List<MyRideUi> _mergeBookings(List<Booking> bookings) {
     final bookedRides = bookings.map((booking) => MyRideUi(
-          driver: booking.route_id.startsWith('rs') ? 'Ahmed H.' : 'Booked Ride',
-          rating: 4.8,
-          from: booking.start ?? 'Nasr City',
-          to: booking.end ?? 'Maadi',
-          date: booking.created_at == null ? 'Today, 20 May 2024' : 'Today, 20 May 2024',
-          time: booking.time ?? '10:00 AM',
-          price: (booking.cost ?? 80).round(),
+          driver: 'Booked Ride',
+          rating: 0,
+          from: booking.start ?? 'Unknown pickup',
+          to: booking.end ?? 'Unknown destination',
+          date: booking.created_at == null ? '' : booking.created_at!.toIso8601String().split('T').first,
+          time: booking.time ?? '',
+          price: (booking.cost ?? 0).round(),
           status: booking.status == 'cancelled' ? RideStatus.cancelled : RideStatus.upcoming,
           avatarColor: const Color(0xFFE8F1FF),
           icon: Icons.person,
         ));
 
-    final combined = [...bookedRides, ...demoRides];
+    final combined = [...bookedRides];
     final seen = <String>{};
     return combined.where((ride) => seen.add('${ride.driver}-${ride.from}-${ride.to}-${ride.time}-${ride.status.name}')).toList();
   }

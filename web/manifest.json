@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "wasalny_app",
     "short_name": "wasalny_app",
+=======
+    "name": "waslny",
+    "short_name": "waslny",
+>>>>>>> f78984aaafac89fea0f126428299245f44cc068c
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

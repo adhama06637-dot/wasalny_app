@@ -26,18 +26,25 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    final route = json['route'] is Map<String, dynamic> ? json['route'] as Map<String, dynamic> : null;
     return Booking(
       id: json['id'].toString(),
       user_id: json['user_id'].toString(),
       route_id: json['route_id'].toString(),
       status: json['status'] ?? 'booked',
       payment_status: json['payment_status'] ?? 'pending',
-      start: json['start'] ?? json['route_start'],
-      end: json['end'] ?? json['route_end'],
-      time: json['time'] ?? json['route_time'],
-      cost: (json['cost'] as num?)?.toDouble() ?? (json['route_cost'] as num?)?.toDouble(),
+      start: json['start'] ?? json['route_start'] ?? route?['start'] ?? route?['from'],
+      end: json['end'] ?? json['route_end'] ?? route?['end'] ?? route?['to'],
+      time: json['time'] ?? json['route_time'] ?? route?['time'] ?? route?['departure_time'],
+      cost: _toNullableDouble(json['cost'] ?? json['route_cost'] ?? route?['cost'] ?? route?['price']),
       created_at: json['created_at'] == null ? null : DateTime.tryParse(json['created_at']),
     );
+  }
+
+  static double? _toNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   Map<String, dynamic> toJson() {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "935263867239",
+    "project_id": "wasalny-fc5c3",
+    "storage_bucket": "wasalny-fc5c3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:935263867239:android:15f7130ec994c53ce95fc2",
+        "android_client_info": {
+          "package_name": "com.example.waslny"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD24NyQX8Nnkr4yUVnCUQQF55FhGgn7mAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

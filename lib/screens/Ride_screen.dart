@@ -26,67 +26,18 @@ class RidesScreen extends StatefulWidget {
 }
 
 class _RidesScreenState extends State<RidesScreen> {
-  final fromController = TextEditingController(text: 'Nasr City');
-  final toController = TextEditingController(text: 'Maadi');
+  late final TextEditingController fromController;
+  late final TextEditingController toController;
   final dateController = TextEditingController(text: 'Today, 20 May');
   final timeController = TextEditingController(text: '10:00 AM');
 
-  static const List<RideInfo> fallbackRides = [
-    RideInfo(
-      id: 'rs1',
-      driver: 'Ahmed H.',
-      route: 'Nasr City → Maadi',
-      from: 'Nasr City',
-      to: 'Maadi',
-      date: 'Today, 20 May 2024',
-      time: '10:00 AM',
-      arrival: '~10:40 AM',
-      distanceKm: 23.3,
-      price: 80,
-      seatsLeft: 2,
-      type: RideType.mixed,
-      rating: 4.8,
-      car: 'Toyota Corolla - Silver',
-      avatarColor: Color(0xFFE8F1FF),
-      avatarIcon: Icons.person,
-    ),
-    RideInfo(
-      id: 'rs2',
-      driver: 'Sara M.',
-      route: 'Heliopolis → Maadi',
-      from: 'Heliopolis',
-      to: 'Maadi',
-      date: 'Today, 20 May 2024',
-      time: '10:30 AM',
-      arrival: '~11:10 AM',
-      distanceKm: 20,
-      price: 70,
-      seatsLeft: 1,
-      type: RideType.female,
-      rating: 4.9,
-      car: 'Hyundai Accent - White',
-      avatarColor: Color(0xFFFFEEF4),
-      avatarIcon: Icons.person_2,
-    ),
-    RideInfo(
-      id: 'rs3',
-      driver: 'Mohamed A.',
-      route: 'Nasr City → Maadi',
-      from: 'Nasr City',
-      to: 'Maadi',
-      date: 'Today, 20 May 2024',
-      time: '11:00 AM',
-      arrival: '~11:45 AM',
-      distanceKm: 26.7,
-      price: 90,
-      seatsLeft: 3,
-      type: RideType.male,
-      rating: 4.7,
-      car: 'Kia Cerato - Black',
-      avatarColor: Color(0xFFEAF7F1),
-      avatarIcon: Icons.person,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<AppProvider>();
+    fromController = TextEditingController(text: provider.from);
+    toController = TextEditingController(text: provider.to);
+  }
 
   @override
   void dispose() {
@@ -105,7 +56,7 @@ class _RidesScreenState extends State<RidesScreen> {
         .where((route) => selectedTransport == 'all' || route.transport_type == selectedTransport)
         .map(RideInfo.fromRoute)
         .toList();
-    final visibleRides = rides.isEmpty && (selectedTransport == 'all' || selectedTransport == 'ride_share') ? fallbackRides : rides;
+    final visibleRides = rides;
     final title = selectedTransport == 'bus'
         ? 'Available Buses'
         : selectedTransport == 'microbus'
@@ -165,6 +116,10 @@ class _RidesScreenState extends State<RidesScreen> {
                 label: const Text('Search Rides', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 onPressed: () async {
                   final provider = context.read<AppProvider>();
+                  if (fromController.text.trim().isEmpty || toController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter From and To locations')));
+                    return;
+                  }
                   await provider.searchRoutes(from: fromController.text, to: toController.text, transport: provider.selectedTransport);
                   if (mounted) setState(() {});
                 },
@@ -183,7 +138,7 @@ class _RidesScreenState extends State<RidesScreen> {
             Container(
               padding: const EdgeInsets.all(22),
               decoration: cardDecoration(radius: 15),
-              child: Text('No $title found nearby. Try another route.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+              child: Text('No $title found from ${fromController.text} to ${toController.text}. Try another route or transport type.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
             )
           else
             ...visibleRides.map((ride) => RideCard(
@@ -246,7 +201,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
               _DetailLine(dotColor: AppColors.secondary, title: 'From', value: ride.from, trailing: ride.time),
               _DetailLine(dotColor: const Color(0xFFFF4B4B), title: 'To', value: ride.to, trailing: ride.arrival),
               _DetailLine(icon: Icons.calendar_today_rounded, title: 'Date', value: ride.date),
-              _DetailLine(icon: Icons.attach_money_rounded, title: 'Price', value: '${calculatePrice(ride.distanceKm).toStringAsFixed(0)} EGP', valueColor: AppColors.secondary),
+              _DetailLine(icon: Icons.attach_money_rounded, title: 'Price', value: '${ride.price} EGP', valueColor: AppColors.secondary),
               _DetailLine(icon: Icons.airline_seat_recline_normal_rounded, title: 'Seats Left', value: '${ride.seatsLeft} seats left', valueColor: Colors.green),
             ]),
           ),
@@ -316,7 +271,7 @@ class BookingConfirmedScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [Text(ride.driver, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(width: 4), const Icon(Icons.verified, color: AppColors.primary, size: 16)]),
-            Text('${ride.rating} ★ • Hyundai Elantra - Silver', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+            Text('${ride.rating} ★ • ${ride.car}', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
           ])),
           IconButton(onPressed: () => _snack(context, 'Calling ${ride.driver}...'), icon: const Icon(Icons.phone, color: AppColors.primary)),
         ])),
@@ -324,18 +279,10 @@ class BookingConfirmedScreen extends StatelessWidget {
         Container(padding: const EdgeInsets.all(16), decoration: cardDecoration(radius: 18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Pickup Point', style: TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
-          Row(children: [const Icon(Icons.location_on_outlined, color: AppColors.primary), const SizedBox(width: 8), Expanded(child: Text('${ride.from} - Gate 2')), TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveRouteScreen())), child: const Text('View on Map'))]),
+          Row(children: [const Icon(Icons.location_on_outlined, color: AppColors.primary), const SizedBox(width: 8), Expanded(child: Text(ride.from)), TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveRouteScreen())), child: const Text('View on Map'))]),
           const Divider(),
           _DialogInfo(icon: Icons.access_time_rounded, text: 'Pickup time  ${ride.time}'),
-          _DialogInfo(icon: Icons.attach_money_rounded, text: '${calculatePrice(ride.distanceKm).toStringAsFixed(0)} EGP paid on pickup'),
-        ])),
-        const SizedBox(height: 12),
-        Container(padding: const EdgeInsets.all(16), decoration: cardDecoration(radius: 18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-          Text('Passengers (3)', style: TextStyle(fontWeight: FontWeight.w900)),
-          SizedBox(height: 12),
-          _PassengerRow('Sara (You)', 'Seat 1'),
-          _PassengerRow('Mona', 'Seat 2'),
-          _PassengerRow('Youssef', 'Seat 3'),
+          _DialogInfo(icon: Icons.attach_money_rounded, text: '${ride.price} EGP paid on pickup'),
         ])),
         const SizedBox(height: 18),
         Row(children: [
@@ -423,7 +370,7 @@ class RideCard extends StatelessWidget {
               Row(children: [const Icon(Icons.directions_car_filled_outlined, size: 16), const SizedBox(width: 8), Text('Today, ${ride.time}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))]),
             ])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('${calculatePrice(ride.distanceKm).toStringAsFixed(0)} EGP', style: const TextStyle(color: AppColors.secondary, fontSize: 16, fontWeight: FontWeight.w900)),
+              Text('${ride.price} EGP', style: const TextStyle(color: AppColors.secondary, fontSize: 16, fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
               Text('${ride.seatsLeft} seat${ride.seatsLeft == 1 ? '' : 's'} left', style: TextStyle(color: ride.seatsLeft == 1 ? Colors.red : Colors.green, fontSize: 12, fontWeight: FontWeight.w800)),
               const SizedBox(height: 10),
@@ -492,28 +439,28 @@ class RideInfo {
 
   factory RideInfo.fromRoute(app_route.Route route) {
     final female = route.female_only;
-    final driver = route.driver_name ?? 'Ahmed';
+    final driver = route.driver_name ?? 'Driver';
     return RideInfo(
       id: route.id,
       driver: driver,
       route: '${route.start} → ${route.end}',
       from: route.start,
       to: route.end,
-      date: 'Today, 20 May 2024',
+      date: DateTime.now().toIso8601String().split('T').first,
       time: route.time,
       arrival: '~${route.time}',
       distanceKm: ((route.cost - 10) / 3).clamp(1, 100).toDouble(),
       price: route.cost.round(),
       seatsLeft: route.available_seats ?? 2,
       type: female ? RideType.female : RideType.mixed,
-      rating: route.driver_rating ?? 4.8,
-      car: route.car_model ?? 'Hyundai Elantra',
+      rating: route.driver_rating ?? 0,
+      car: route.car_model ?? 'Car details unavailable',
       avatarColor: female ? const Color(0xFFFFEEF4) : const Color(0xFFE8F1FF),
       avatarIcon: female ? Icons.person_2 : Icons.person,
     );
   }
 
-  app_route.Route toRoute() => app_route.Route(id: id, start: from, end: to, time: time, cost: calculatePrice(distanceKm), transfers: 0, transport_type: 'ride_share', driver_name: driver, driver_rating: rating, car_model: car, available_seats: seatsLeft, total_seats: 4, female_only: type == RideType.female);
+  app_route.Route toRoute() => app_route.Route(id: id, start: from, end: to, time: time, cost: price.toDouble(), transfers: 0, transport_type: 'ride_share', driver_name: driver, driver_rating: rating, car_model: car, available_seats: seatsLeft, total_seats: seatsLeft, female_only: type == RideType.female);
 }
 
 class _PassengerRow extends StatelessWidget {
@@ -553,7 +500,6 @@ class _LabeledField extends StatelessWidget {
         height: 48,
         child: TextField(
           controller: controller,
-          readOnly: true,
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: compact ? 13 : 14),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
