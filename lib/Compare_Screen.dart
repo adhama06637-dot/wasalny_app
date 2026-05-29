@@ -1,3 +1,4 @@
+import '../services/ride_service.dart';
 import 'package:flutter/material.dart';
 import 'Map.dart'; 
 
@@ -289,7 +290,14 @@ class SharedRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price          = ride['price_egp']?.toString() ?? '--';
+   final rideService = RideService();
+
+double calculatedPrice =
+    rideService.calculateRidePrice(
+  distanceKm:
+      (ride['distance_km'] ?? 0)
+          .toDouble(),
+);
     final seats          = ride['available_seats']?.toString() ?? '--';
     final driverName     = ride['driver_id']?.toString() ?? 'Driver';
     final genderPref     = ride['gender_preference']?.toString() ?? 'any';
@@ -358,7 +366,13 @@ class SharedRideCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Text('$price EGP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+  '${calculatedPrice.toStringAsFixed(0)} EGP',
+  style: const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+  ),
+)
             ],
           ),
           const SizedBox(height: 12),
