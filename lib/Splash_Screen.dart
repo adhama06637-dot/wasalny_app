@@ -1,17 +1,20 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'providers/app_provider.dart';
-import 'screens/app_colors.dart';
-import 'screens/login.dart';
+import 'Onboarding.dart';
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppProvider(),
-      child: const MaterialApp(debugShowCheckedModeBanner: false, home: SplashScreen()),
-    ),
-  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SplashScreen(),
+    );
+  }
 }
 
 class SplashScreen extends StatefulWidget {
@@ -21,27 +24,48 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
-  late final Animation<double> _opacity;
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController controller;
+  late Animation<double> opacity;
+  late Animation<Offset> position;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
-    _scale = Tween<double>(begin: .85, end: 1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-    _opacity = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _controller.forward();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    opacity = Tween<double>(begin: 0, end: 1).animate(controller);
+
+    position = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    controller.forward();
+
+    Future.delayed(const Duration(seconds: 5), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const OnboardingScreen(),
+        ),
+      );
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    controller.dispose();
     super.dispose();
   }
 
@@ -51,29 +75,28 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(gradient: appGradient()),
-        child: FadeTransition(
-          opacity: _opacity,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 118,
-                  height: 118,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.16),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(.35), width: 1.5),
-                  ),
-                  child: const Icon(Icons.route_rounded, color: Colors.white, size: 62),
+        decoration: const BoxDecoration(
+          color: Color(0xFF303099),
+          image: DecorationImage(
+            image: AssetImage("assets/images/splash wasalny.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+
+        child: Center(
+          child: FadeTransition(
+            opacity: opacity,
+            child: SlideTransition(
+              position: position,
+              child: const Text(
+                "WASALNY",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 38,
+                  fontFamily: 'AbrilFatface',
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 22),
-                const Text('WASALNY', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                const SizedBox(height: 8),
-                const Text('Ride sharing & transport guide', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-              ],
+              ),
             ),
           ),
         ),
