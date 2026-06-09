@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:wasalny_app/Profile.dart';
 
 import '../models/route.dart' as app_route;
 import '../providers/app_provider.dart';
 import 'app_colors.dart';
-import 'filter_screen.dart';
 import 'live_route_screen.dart';
 import 'my_rides_screen.dart';
 import 'publish_trip_screen.dart';
+import 'Profile.dart';
+import 'package:wasalny_app/Home.dart';
+
 
 double calculatePrice(double distance) {
   double fuelCostPerKm = 2; // سعر البنزين لكل كيلو
@@ -17,15 +20,15 @@ double calculatePrice(double distance) {
   return baseFare + (fuelCostPerKm + maintenancePerKm) * distance;
 }
 
-class RidesScreen extends StatefulWidget {
+class RideSharingScreen extends StatefulWidget {
   final bool showBackButton;
-  const RidesScreen({super.key, this.showBackButton = true});
+  const RideSharingScreen({super.key, this.showBackButton = true});
 
   @override
-  State<RidesScreen> createState() => _RidesScreenState();
+  State<RideSharingScreen> createState() => _RideSharingScreenState();
 }
 
-class _RidesScreenState extends State<RidesScreen> {
+class _RideSharingScreenState extends State<RideSharingScreen> {
   late final TextEditingController fromController;
   late final TextEditingController toController;
   final dateController = TextEditingController(text: 'Today, 20 May');
@@ -79,18 +82,6 @@ class _RidesScreenState extends State<RidesScreen> {
             icon: const Icon(Icons.add_circle_outline_rounded),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PublishTripScreen())),
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 10),
-            child: IconButton(
-              icon: const Icon(Icons.tune_rounded, color: AppColors.secondary),
-              onPressed: () async {
-                await Navigator.push(context, MaterialPageRoute(builder: (_) => const FilterScreen()));
-                if (!context.mounted) return;
-                final provider = context.read<AppProvider>();
-                await provider.searchRoutes(from: fromController.text, to: toController.text, transport: provider.selectedTransport);
-              },
-            ),
-          ),
         ],
       ),
       body: ListView(
@@ -101,9 +92,59 @@ class _RidesScreenState extends State<RidesScreen> {
           _LabeledField(label: 'To', controller: toController, icon: Icons.location_on_rounded, trailing: Icons.swap_vert_rounded),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: _LabeledField(label: 'Date', controller: dateController, icon: Icons.calendar_today_rounded, compact: true)),
+            Expanded(
+  child: GestureDetector(
+    onTap: () async {
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2030),
+      );
+
+      if (pickedDate != null) {
+        dateController.text =
+            '${pickedDate.day}/${pickedDate.month}/${pickedDate.year}';
+
+        setState(() {});
+      }
+    },
+    child: AbsorbPointer(
+      child: _LabeledField(
+        label: 'Date',
+        controller: dateController,
+        icon: Icons.calendar_today_rounded,
+        compact: true,
+      ),
+    ),
+  ),
+),
             const SizedBox(width: 14),
-            Expanded(child: _LabeledField(label: 'Time', controller: timeController, icon: Icons.access_time_rounded, compact: true)),
+            Expanded(
+  child: GestureDetector(
+    onTap: () async {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        timeController.text =
+            pickedTime.format(context);
+
+        setState(() {});
+      }
+    },
+    child: AbsorbPointer(
+      child: _LabeledField(
+        label: 'Time',
+        controller: timeController,
+        icon: Icons.access_time_rounded,
+        compact: true,
+      ),
+    ),
+  ),
+),
           ]),
           const SizedBox(height: 18),
           SizedBox(
@@ -147,6 +188,7 @@ class _RidesScreenState extends State<RidesScreen> {
                 )),
         ],
       ),
+      bottomNavigationBar: const RideBottomNav(currentIndex: 1),
     );
   }
 }
@@ -387,31 +429,122 @@ class RideBottomNav extends StatelessWidget {
   final int currentIndex;
   const RideBottomNav({super.key, required this.currentIndex});
 
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: isActive ? AppColors.secondary : Colors.grey,
+          size: 24,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppColors.secondary : Colors.grey,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 14, offset: const Offset(0, -4))]),
-      child: SafeArea(
-        top: false,
-        child: BottomNavigationBar(
-          currentIndex: currentIndex.clamp(0, 3),
-          onTap: (index) {
-            context.read<AppProvider>().setIndex(index);
-            Navigator.popUntil(context, (route) => route.isFirst);
-          },
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.secondary,
-          unselectedItemColor: const Color(0xFF1E263A),
-          elevation: 0,
-          selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-          unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.directions_car_filled_outlined), label: 'My Rides'),
-            BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Wallet'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
-          ],
-        ),
+      height: 75,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 10,
+            color: Colors.black12,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+
+          // Home
+          GestureDetector(
+          onTap: () {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const HomeScreen(),
+    ),
+    (route) => false,
+  );
+},
+            child: _buildNavItem(
+              icon: Icons.home_filled,
+              label: 'Home',
+              isActive: currentIndex == 0,
+            ),
+          ),
+
+          // Ride Sharing
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RideSharingScreen(
+                    showBackButton: false,
+                  ),
+                ),
+              );
+            },
+            child: _buildNavItem(
+              icon: Icons.local_taxi_outlined,
+              label: 'Ride Sharing',
+              isActive: currentIndex == 1,
+            ),
+          ),
+
+          // My Rides
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MyRidesScreen(),
+                ),
+              );
+            },
+            child: _buildNavItem(
+              icon: Icons.list_alt_outlined,
+              label: 'My Rides',
+              isActive: currentIndex == 2,
+            ),
+          ),
+
+          // Profile
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ProfilePage(),
+                ),
+              );
+            },
+            child: _buildNavItem(
+              icon: Icons.person_outline,
+              label: 'Profile',
+              isActive: currentIndex == 3,
+            ),
+          ),
+        ],
       ),
     );
   }

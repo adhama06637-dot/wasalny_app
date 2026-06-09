@@ -2,10 +2,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'Profile.dart';
-import 'screens/Ride_screen.dart';
+import 'screens/RideSharing_screen.dart';
 import 'Compare_Screen.dart';
 import 'api_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'screens/my_rides_screen.dart';
+
 
 
 
@@ -386,7 +388,7 @@ void initState() {
                 children: [
                   Icon(Icons.history, color: Colors.grey, size: 16),
                   SizedBox(width: 6),
-                  Text('Recent searches', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text('Popular Destinations', style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
               Text('View all', style: TextStyle(color: Color(0xFF6C5DD3), fontSize: 12, fontWeight: FontWeight.bold)),
@@ -549,7 +551,7 @@ void initState() {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const RidesScreen(),
+                builder: (context) => const RideSharingScreen(),
               ),
             );
           },
@@ -559,7 +561,23 @@ void initState() {
             isActive: false,
           ),
         ),
-
+         
+         // My Rides
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyRidesScreen(),
+      ),
+    );
+  },
+  child: _buildNavItem(
+    icon: Icons.list_alt_outlined,
+    label: 'My Rides',
+    isActive: false,
+  ),
+),
         // Profile
         GestureDetector(
           onTap: () {
