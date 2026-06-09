@@ -1,28 +1,37 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'Splash_Screen.dart'; // رجعنا شاشة البداية بتاعتك بسلام
+import 'package:provider/provider.dart';
 
-void main() async {
+import 'Splash_Screen.dart';
+import 'firebase_options.dart';
+import 'providers/app_provider.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AppProvider(),
+      child: const WasalnyApp(),
+    ),
   );
-  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class WasalnyApp extends StatelessWidget {
+  const WasalnyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'Wasalny',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFFCFCFF),
-        fontFamily: 'Roboto', 
+        scaffoldBackgroundColor: const Color(0xFFF6F7FB),
+        fontFamily: 'Roboto',
+        useMaterial3: true,
       ),
-      home: const SplashScreen(), // هيبدأ من الاسبلاش سكرين
+      home: const SplashScreen(),
     );
   }
 }

@@ -49,7 +49,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     try {
       // 1️⃣ Create user in Firebase Auth
       UserCredential userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
@@ -176,11 +176,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           child: Center(
                             child: isLoading
                                 ? const CircularProgressIndicator(
-                                    color: Colors.white)
+                                color: Colors.white)
                                 : const Text(
-                                    "Sign Up",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                              "Sign Up",
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
                         ),
                       ),

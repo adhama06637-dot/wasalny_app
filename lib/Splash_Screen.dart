@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:waslny/Onboarding.dart'; // ⚠️ اتأكد إن الـ Import ده لصفحة الـ Onboarding
+﻿import 'package:flutter/material.dart';
+import 'Onboarding.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,29 +41,25 @@ class _SplashScreenState extends State<SplashScreen>
 
     opacity = Tween<double>(begin: 0, end: 1).animate(controller);
 
-    // أنيميشن الطلوع لفوق اللي إنت حبيته
     position = Tween<Offset>(
-      begin: const Offset(0, 0.5),
+      begin: const Offset(0, 1),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: controller,
-        curve: Curves.easeOutBack, // سوستة خفيفة في الآخر عشان الحركة تكون "لذيذة"
+        curve: Curves.easeOut,
       ),
     );
 
     controller.forward();
 
-    // 🚀 التعديل الجوهري هنا: التوجيه لصفحة الـ Onboarding 
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const OnboardingScreen(), // هنا بننادي على الـ 3 مراحل
-          ),
-        );
-      }
+    Future.delayed(const Duration(seconds: 5), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const OnboardingScreen(),
+        ),
+      );
     });
   }
 
@@ -80,61 +76,29 @@ class _SplashScreenState extends State<SplashScreen>
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          // 🎨 كسر حدة اللون الأزرق بتدرج دائري (Radial Gradient)
-          gradient: RadialGradient(
-            colors: [
-              Color(0xFF4A4ABF), // أزرق فاتح ومنور في النص
-              Color(0xFF303099), // اللون الأزرق بتاعك الأساسي على الأطراف
-            ],
-            radius: 1.0,
+          color: Color(0xFF303099),
+          image: DecorationImage(
+            image: AssetImage("assets/images/splash wasalny.png"),
+            fit: BoxFit.cover,
           ),
         ),
-        child: Stack(
-          children: [
-            // صورة الخلفية (لو حابب تسيبها زي ما كانت)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.1, // تظليل خفيف جداً للصورة عشان متزحمش العين
-                child: Image.asset(
-                  "assets/images/splash waslny.png",
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+
+        child: Center(
+          child: FadeTransition(
+            opacity: opacity,
+            child: SlideTransition(
+              position: position,
+              child: const Text(
+                "WASALNY",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 38,
+                  fontFamily: 'AbrilFatface',
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            
-            // النص المتحرك في السنتر
-            Center(
-              child: FadeTransition(
-                opacity: opacity,
-                child: SlideTransition(
-                  position: position,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "WASALNY",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 44,
-                          fontFamily: 'AbrilFatface',
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      // خط أبيض رفيع تحت الكلمة بيدي شكل مودرن
-                      Container(
-                        width: 100,
-                        height: 2,
-                        color: Colors.white.withOpacity(0.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

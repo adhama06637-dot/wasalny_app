@@ -1,0 +1,11 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
+import 'app_colors.dart';
+
+class FilterScreen extends StatefulWidget{ const FilterScreen({super.key}); @override State<FilterScreen> createState()=>_FilterScreenState();}
+class _FilterScreenState extends State<FilterScreen>{ double price=60; bool female=false;
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title: const Text('Filters'), actions:[TextButton(onPressed:(){setState((){female=false;price=100;}); context.read<AppProvider>().setRideFilters(femaleOnly:false,maxPrice:100);}, child: const Text('Reset'))]), body:ListView(padding: const EdgeInsets.all(18), children:[const Text('Ride Type', style: TextStyle(fontWeight:FontWeight.bold)), const SizedBox(height:10), Row(children:[_chip('All',!female,onTap:()=>setState(()=>female=false)),_chip('Everyone',!female,onTap:()=>setState(()=>female=false)),_chip('Female Only',female,onTap:()=>setState(()=>female=true))]), const SizedBox(height:22), const Text('Departure Time', style: TextStyle(fontWeight:FontWeight.bold)), const SizedBox(height:10), _option('Any time'), _option('Morning (6 AM - 12 PM)'), _option('Afternoon (12 PM - 6 PM)'), _option('Evening (6 PM - 12 AM)'), const SizedBox(height:20), Text('Price Range: ${price.round()} EGP'), Slider(value:price,min:20,max:100,onChanged:(v)=>setState(()=>price=v)), const SizedBox(height:20), SizedBox(height:54, child:ElevatedButton(style:ElevatedButton.styleFrom(backgroundColor:AppColors.primary,foregroundColor:Colors.white), onPressed:(){context.read<AppProvider>().setRideFilters(femaleOnly:female,maxPrice:price); Navigator.pop(context);}, child: const Text('Show Rides')))]));
+  Widget _chip(String t,bool s,{VoidCallback? onTap})=>Expanded(child:Padding(padding: const EdgeInsets.only(right:8), child:ChoiceChip(label:Center(child:Text(t,style: const TextStyle(fontSize:12))), selected:s, onSelected:(_){if(onTap!=null)onTap();}, selectedColor:AppColors.primary.withOpacity(.15))));
+  Widget _option(String t)=>Container(margin: const EdgeInsets.only(bottom:10), padding: const EdgeInsets.all(14), decoration:cardDecoration(radius:12), child:Row(children:[const Icon(Icons.access_time,color:AppColors.primary,size:18), const SizedBox(width:8), Text(t)]));
+}
