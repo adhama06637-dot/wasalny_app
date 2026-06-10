@@ -77,7 +77,7 @@ class _RequestCard extends StatelessWidget {
         Row(children: [
           const CircleAvatar(child: Icon(Icons.person)),
           const SizedBox(width: 10),
-          Expanded(child: Text('Rider ${request.user_id}', style: const TextStyle(fontWeight: FontWeight.w900))),
+          Expanded(child: Text('Rider ${request.user_name ?? request.user_id}', style: const TextStyle(fontWeight: FontWeight.w900))),
           _StatusChip(status: request.status),
         ]),
         const SizedBox(height: 10),

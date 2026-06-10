@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../models/booking.dart';
 import '../providers/app_provider.dart';
-import 'Ride_screen.dart';
 import 'app_colors.dart';
 
 class MyRidesScreen extends StatefulWidget {
@@ -58,7 +57,16 @@ class _MyRidesScreenState extends State<MyRidesScreen> {
             ...filtered.map((ride) => MyRideCard(ride: ride)),
         ],
       ),
-      bottomNavigationBar: widget.showBottomNav ? const RideBottomNav(currentIndex: 1) : null,
+      bottomNavigationBar: widget.showBottomNav
+          ? BottomNavigationBar(
+              currentIndex: 1,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                BottomNavigationBarItem(icon: Icon(Icons.local_taxi), label: 'Rides'),
+                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+              ],
+            )
+          : null,
     );
   }
 

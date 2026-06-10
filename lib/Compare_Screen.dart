@@ -290,14 +290,10 @@ class SharedRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-   final rideService = RideService();
+   
 
-double calculatedPrice =
-    rideService.calculateRidePrice(
-  distanceKm:
-      (ride['distance_km'] ?? 0)
-          .toDouble(),
-);
+double distanceKm = (ride['distance_km'] ?? 0).toDouble();
+double calculatedPrice = (distanceKm * 2.5) + 5.0;
     final seats          = ride['available_seats']?.toString() ?? '--';
     final driverName     = ride['driver_id']?.toString() ?? 'Driver';
     final genderPref     = ride['gender_preference']?.toString() ?? 'any';

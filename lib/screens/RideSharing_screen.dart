@@ -1,48 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:wasalny_app/Profile.dart';
+import 'package:wasalny_app/Home.dart';
+import '../api_service.dart';
 import '../models/route.dart' as app_route;
 import '../providers/app_provider.dart';
+import '../Services/ride_service.dart'; // 🚀 استدعاء الذكاء بتاع السعر
 import 'app_colors.dart';
-import 'filter_screen.dart';
 import 'live_route_screen.dart';
 import 'my_rides_screen.dart';
 import 'publish_trip_screen.dart';
 
-double calculatePrice(double distance) {
-  double fuelCostPerKm = 2; // سعر البنزين لكل كيلو
-  double maintenancePerKm = 1; // تكلفة الصيانة لكل كيلو
-  double baseFare = 10; // سعر ثابت
-
-  return baseFare + (fuelCostPerKm + maintenancePerKm) * distance;
-}
-
-class RidesScreen extends StatefulWidget {
+class RideSharingScreen extends StatefulWidget {
   final bool showBackButton;
-  const RidesScreen({super.key, this.showBackButton = true});
+  const RideSharingScreen({super.key, this.showBackButton = true});
 
   @override
-  State<RidesScreen> createState() => _RidesScreenState();
+  State<RideSharingScreen> createState() => _RideSharingScreenState();
 }
 
-class _RidesScreenState extends State<RidesScreen> {
-  late final TextEditingController fromController;
-  late final TextEditingController toController;
+class _RideSharingScreenState extends State<RideSharingScreen> {
   final dateController = TextEditingController(text: 'Today, 20 May');
   final timeController = TextEditingController(text: '10:00 AM');
+
+  // متغيرات المحطات الديناميكية
+  List<String> _locations = ['Loading...'];
+  String _fromValue = 'Loading...';
+  String _toValue = 'Loading...';
 
   @override
   void initState() {
     super.initState();
-    final provider = context.read<AppProvider>();
-    fromController = TextEditingController(text: provider.from);
-    toController = TextEditingController(text: provider.to);
+    _fetchStations();
+  }
+
+  // 🚀 دالة جلب المحطات من الـ API
+  Future<void> _fetchStations() async {
+    final stations = await ApiService.getStations();
+    if (!mounted) return;
+
+    if (stations.isNotEmpty) {
+      setState(() {
+        _locations = stations;
+        final provider = context.read<AppProvider>();
+        
+        _fromValue = stations.contains(provider.from) ? provider.from : stations[0];
+        _toValue = stations.contains(provider.to) ? provider.to : (stations.length > 1 ? stations[1] : stations[0]);
+      });
+    } else {
+      setState(() {
+        _locations = ['No Data Available'];
+        _fromValue = 'No Data Available';
+        _toValue = 'No Data Available';
+      });
+    }
+  }
+
+  void _swapLocations() {
+    setState(() {
+      String temp = _fromValue;
+      _fromValue = _toValue;
+      _toValue = temp;
+    });
   }
 
   @override
   void dispose() {
-    fromController.dispose();
-    toController.dispose();
     dateController.dispose();
     timeController.dispose();
     super.dispose();
@@ -79,31 +102,79 @@ class _RidesScreenState extends State<RidesScreen> {
             icon: const Icon(Icons.add_circle_outline_rounded),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PublishTripScreen())),
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 10),
-            child: IconButton(
-              icon: const Icon(Icons.tune_rounded, color: AppColors.secondary),
-              onPressed: () async {
-                await Navigator.push(context, MaterialPageRoute(builder: (_) => const FilterScreen()));
-                if (!context.mounted) return;
-                final provider = context.read<AppProvider>();
-                await provider.searchRoutes(from: fromController.text, to: toController.text, transport: provider.selectedTransport);
-              },
-            ),
-          ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
         children: [
-          _LabeledField(label: 'From', controller: fromController, icon: Icons.location_on_rounded, trailing: Icons.swap_vert_rounded),
+          // 🚀 Dropdown للـ From
+          _LabeledDropdown(
+            label: 'From',
+            value: _fromValue,
+            items: _locations,
+            icon: Icons.location_on_rounded,
+            trailing: Icons.swap_vert_rounded,
+            onTrailingTap: _swapLocations,
+            onChanged: (val) => setState(() => _fromValue = val!),
+          ),
           const SizedBox(height: 12),
-          _LabeledField(label: 'To', controller: toController, icon: Icons.location_on_rounded, trailing: Icons.swap_vert_rounded),
+          // 🚀 Dropdown للـ To
+          _LabeledDropdown(
+            label: 'To',
+            value: _toValue,
+            items: _locations,
+            icon: Icons.location_on_rounded,
+            onChanged: (val) => setState(() => _toValue = val!),
+          ),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: _LabeledField(label: 'Date', controller: dateController, icon: Icons.calendar_today_rounded, compact: true)),
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2030),
+                  );
+                  if (pickedDate != null) {
+                    dateController.text = '${pickedDate.day}/${pickedDate.month}/${pickedDate.year}';
+                    setState(() {});
+                  }
+                },
+                child: AbsorbPointer(
+                  child: _LabeledField(
+                    label: 'Date',
+                    controller: dateController,
+                    icon: Icons.calendar_today_rounded,
+                    compact: true,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(width: 14),
-            Expanded(child: _LabeledField(label: 'Time', controller: timeController, icon: Icons.access_time_rounded, compact: true)),
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final pickedTime = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
+                  if (pickedTime != null) {
+                    timeController.text = pickedTime.format(context);
+                    setState(() {});
+                  }
+                },
+                child: AbsorbPointer(
+                  child: _LabeledField(
+                    label: 'Time',
+                    controller: timeController,
+                    icon: Icons.access_time_rounded,
+                    compact: true,
+                  ),
+                ),
+              ),
+            ),
           ]),
           const SizedBox(height: 18),
           SizedBox(
@@ -115,12 +186,12 @@ class _RidesScreenState extends State<RidesScreen> {
                 icon: const Icon(Icons.search_rounded),
                 label: const Text('Search Rides', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 onPressed: () async {
-                  final provider = context.read<AppProvider>();
-                  if (fromController.text.trim().isEmpty || toController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter From and To locations')));
+                  if (_fromValue == 'Loading...' || _fromValue == 'No Data Available') {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please wait for locations to load or check your connection.')));
                     return;
                   }
-                  await provider.searchRoutes(from: fromController.text, to: toController.text, transport: provider.selectedTransport);
+                  final provider = context.read<AppProvider>();
+                  await provider.searchRoutes(from: _fromValue, to: _toValue, transport: provider.selectedTransport);
                   if (mounted) setState(() {});
                 },
               ),
@@ -138,7 +209,7 @@ class _RidesScreenState extends State<RidesScreen> {
             Container(
               padding: const EdgeInsets.all(22),
               decoration: cardDecoration(radius: 15),
-              child: Text('No $title found from ${fromController.text} to ${toController.text}. Try another route or transport type.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+              child: Text('No $title found from $_fromValue to $_toValue. Try another route or transport type.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
             )
           else
             ...visibleRides.map((ride) => RideCard(
@@ -147,6 +218,7 @@ class _RidesScreenState extends State<RidesScreen> {
                 )),
         ],
       ),
+      bottomNavigationBar: const RideBottomNav(currentIndex: 1),
     );
   }
 }
@@ -298,6 +370,7 @@ class BookingConfirmedScreen extends StatelessWidget {
   void _snack(BuildContext context, String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 }
 
+// 🚀 المربع بتاع السعر الذكي مربوط هنا
 class BookingSuccessDialog extends StatelessWidget {
   final RideInfo ride;
   const BookingSuccessDialog({super.key, required this.ride});
@@ -321,7 +394,10 @@ class BookingSuccessDialog extends StatelessWidget {
           const SizedBox(height: 16),
           _DialogInfo(icon: Icons.calendar_today_rounded, text: ride.date),
           _DialogInfo(icon: Icons.access_time_rounded, text: ride.time),
-          _DialogInfo(icon: Icons.attach_money_rounded, text: '${calculatePrice(ride.distanceKm).toStringAsFixed(0)} EGP'),
+          
+          // 🚀 استدعاء الـ Price Engine
+          _DialogInfo(icon: Icons.attach_money_rounded, text: '${RideService.calculateRidePrice(distanceKm: ride.distanceKm).toStringAsFixed(0)} EGP'),
+          
           const SizedBox(height: 22),
           SizedBox(
             width: double.infinity,
@@ -387,31 +463,88 @@ class RideBottomNav extends StatelessWidget {
   final int currentIndex;
   const RideBottomNav({super.key, required this.currentIndex});
 
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: isActive ? AppColors.secondary : Colors.grey,
+          size: 24,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppColors.secondary : Colors.grey,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 14, offset: const Offset(0, -4))]),
-      child: SafeArea(
-        top: false,
-        child: BottomNavigationBar(
-          currentIndex: currentIndex.clamp(0, 3),
-          onTap: (index) {
-            context.read<AppProvider>().setIndex(index);
-            Navigator.popUntil(context, (route) => route.isFirst);
-          },
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.secondary,
-          unselectedItemColor: const Color(0xFF1E263A),
-          elevation: 0,
-          selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-          unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.directions_car_filled_outlined), label: 'My Rides'),
-            BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Wallet'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
-          ],
-        ),
+      height: 75,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 10,
+            color: Colors.black12,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (route) => false,
+              );
+            },
+            child: _buildNavItem(icon: Icons.home_filled, label: 'Home', isActive: currentIndex == 0),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const RideSharingScreen(showBackButton: false)),
+              );
+            },
+            child: _buildNavItem(icon: Icons.local_taxi_outlined, label: 'Ride Sharing', isActive: currentIndex == 1),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const MyRidesScreen()),
+              );
+            },
+            child: _buildNavItem(icon: Icons.list_alt_outlined, label: 'My Rides', isActive: currentIndex == 2),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
+            child: _buildNavItem(icon: Icons.person_outline, label: 'Profile', isActive: currentIndex == 3),
+          ),
+        ],
       ),
     );
   }
@@ -440,6 +573,12 @@ class RideInfo {
   factory RideInfo.fromRoute(app_route.Route route) {
     final female = route.female_only;
     final driver = route.driver_name ?? 'Driver';
+    final minutes = int.tryParse(RegExp(r'(\d+)').firstMatch(route.time)?.group(1) ?? '') ?? 0;
+    final estimatedDistance = (minutes / 60.0) * 30.0;
+    final finalPrice = route.cost > 0
+        ? route.cost
+        : RideService.calculateRidePrice(distanceKm: estimatedDistance);
+
     return RideInfo(
       id: route.id,
       driver: driver,
@@ -450,7 +589,7 @@ class RideInfo {
       time: route.time,
       arrival: '~${route.time}',
       distanceKm: ((route.cost - 10) / 3).clamp(1, 100).toDouble(),
-      price: route.cost.round(),
+      price: finalPrice.round(),
       seatsLeft: route.available_seats ?? 2,
       type: female ? RideType.female : RideType.mixed,
       rating: route.driver_rating ?? 0,
@@ -463,18 +602,6 @@ class RideInfo {
   app_route.Route toRoute() => app_route.Route(id: id, start: from, end: to, time: time, cost: price.toDouble(), transfers: 0, transport_type: 'ride_share', driver_name: driver, driver_rating: rating, car_model: car, available_seats: seatsLeft, total_seats: seatsLeft, female_only: type == RideType.female);
 }
 
-class _PassengerRow extends StatelessWidget {
-  final String name;
-  final String seat;
-  const _PassengerRow(this.name, this.seat);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(children: [const CircleAvatar(radius: 14, child: Icon(Icons.person, size: 16)), const SizedBox(width: 10), Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))), Chip(label: Text(seat), visualDensity: VisualDensity.compact)]),
-      );
-}
-
 enum RideType { female, male, mixed }
 
 extension RideTypeMeta on RideType {
@@ -482,6 +609,77 @@ extension RideTypeMeta on RideType {
   IconData get icon => this == RideType.female ? Icons.female_rounded : this == RideType.male ? Icons.male_rounded : Icons.groups_2_outlined;
   Color get color => this == RideType.female ? const Color(0xFFE84B72) : this == RideType.male ? AppColors.primary : AppColors.secondary;
   Color get bg => this == RideType.female ? const Color(0xFFFFF0F4) : this == RideType.male ? const Color(0xFFF1F4FF) : const Color(0xFFF6F0FF);
+}
+
+
+class _LabeledDropdown extends StatelessWidget {
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+  final IconData icon;
+  final IconData? trailing;
+  final VoidCallback? onTrailingTap;
+
+  const _LabeledDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.icon,
+    this.trailing,
+    this.onTrailingTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 5),
+        child: Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w700)),
+      ),
+      Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 12),
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: value,
+                  isExpanded: true,
+                  icon: const SizedBox.shrink(), 
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.text),
+                  items: items.map((String item) {
+                    return DropdownMenuItem<String>(
+                      value: item,
+                      child: Text(item),
+                    );
+                  }).toList(),
+                  onChanged: onChanged,
+                ),
+              ),
+            ),
+            if (trailing != null)
+              GestureDetector(
+                onTap: onTrailingTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Icon(trailing, color: AppColors.secondary, size: 20),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ]);
+  }
 }
 
 class _LabeledField extends StatelessWidget {

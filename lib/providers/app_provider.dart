@@ -71,16 +71,19 @@ class AppProvider extends ChangeNotifier {
       final endMatches = to.trim().isEmpty || route.end.toLowerCase().contains(to.trim().toLowerCase());
       return startMatches && endMatches;
     }).toList();
+    
     routes = [...apiRoutes];
     for (final route in firestoreRoutes) {
       if (!routes.any((item) => item.id == route.id)) routes.add(route);
     }
+    
     final matchedRoutes = routes.where((route) {
       final matchType = selectedTransport == 'all' || route.transport_type == selectedTransport;
       final matchFemale = !femaleOnly || route.female_only;
       final matchPrice = route.cost <= maxPrice;
       return matchType && matchFemale && matchPrice;
     }).toList();
+    
     filteredRoutes = matchedRoutes;
 
     isLoading = false;
@@ -104,12 +107,14 @@ class AppProvider extends ChangeNotifier {
           route_id: selectedRoute!.id,
           status: 'requested',
           payment_status: 'pending',
+          user_name: currentUser?.name,
           start: selectedRoute!.start,
           end: selectedRoute!.end,
           time: selectedRoute!.time,
           cost: selectedRoute!.cost,
           created_at: DateTime.now(),
         );
+        
     bookings.insert(0, booking);
     rideRequestsByRoute.putIfAbsent(selectedRoute!.id, () => []);
     final requests = rideRequestsByRoute[selectedRoute!.id]!;
@@ -146,17 +151,34 @@ class AppProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     app_route.Route? createdRoute;
+    
     try {
       createdRoute = await api.createRoute(route).timeout(const Duration(seconds: 8));
     } catch (_) {
       createdRoute = null;
     }
-    createdRoute ??= await rideService.createRide(route);
-    final publishedRoute = createdRoute ?? route;
+    
+    if (createdRoute == null) {
+      await rideService.createRide({
+        'id': route.id,
+        'start': route.start,
+        'end': route.end,
+        'time': route.time,
+        'cost': route.cost,
+        'transport_type': route.transport_type,
+        'driver_name': route.driver_name,
+        'female_only': route.female_only,
+        'available_seats': route.available_seats ?? 4,
+      });
+      createdRoute = route;
+    }
+
+    final publishedRoute = createdRoute;
     lastPublishedRoute = publishedRoute;
     selectedRoute = publishedRoute;
     _upsertRoute(publishedRoute);
     rideRequestsByRoute.putIfAbsent(publishedRoute.id, () => []);
+    
     isLoading = false;
     notifyListeners();
     return true;
@@ -188,5 +210,4 @@ class AppProvider extends ChangeNotifier {
     walletBalance += amount;
     notifyListeners();
   }
-
 }

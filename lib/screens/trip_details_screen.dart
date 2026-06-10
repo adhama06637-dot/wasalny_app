@@ -1,9 +1,10 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/route.dart' as app_route;
 import '../providers/app_provider.dart';
 import 'app_colors.dart';
-import 'payment_screen.dart';
+
 
 class TripDetailsScreen extends StatelessWidget {
   const TripDetailsScreen({super.key});
@@ -25,7 +26,7 @@ class TripDetailsScreen extends StatelessWidget {
         const SizedBox(height: 22),
         Container(padding: const EdgeInsets.all(20), decoration: cardDecoration(radius: 18), child: const Row(children: [CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.flag, color: Colors.white)), SizedBox(width: 18), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('You arrived', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), SizedBox(height: 6), Text('successfully!', style: TextStyle(fontSize: 17, color: Colors.green, fontWeight: FontWeight.w900))])), Text('🎉', style: TextStyle(fontSize: 30))])),
         const SizedBox(height: 22),
-        SizedBox(height: 56, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PaymentScreen(route: route))), child: const Text('Book & Pay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)))),
+        SizedBox(height: 56, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeScreen(route: route))), child: const Text('Book & Pay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)))),
       ]),
     );
   }
@@ -47,4 +48,4 @@ class _StepTile extends StatelessWidget {
     SizedBox(width: 66, child: Column(children: [CircleAvatar(radius: 28, backgroundColor: step.color, child: Stack(clipBehavior: Clip.none, children: [Icon(step.icon, color: Colors.white), Positioned(left: -18, top: -12, child: CircleAvatar(radius: 12, backgroundColor: step.color, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))))])), if (!isLast) Container(width: 2, height: 112, color: Colors.grey.shade300)])),
     Expanded(child: Container(margin: const EdgeInsets.only(bottom: 28), padding: const EdgeInsets.all(22), decoration: cardDecoration(radius: 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(step.title, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)), const SizedBox(height: 18), Text(step.from, style: const TextStyle(color: Color(0xFF2D9CDB), fontSize: 17)), const SizedBox(height: 8), Text(step.to, style: const TextStyle(color: AppColors.secondary, fontSize: 17)), const SizedBox(height: 20), Row(children: [const Icon(Icons.access_time, size: 20), const SizedBox(width: 8), Text(step.time, style: const TextStyle(fontSize: 16)), const SizedBox(width: 28), const Icon(Icons.account_balance_wallet, size: 20), const SizedBox(width: 8), Text(step.cost, style: const TextStyle(fontSize: 16))])]))),
   ]);
-}
+}*/
