@@ -88,7 +88,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ],
         ),
-      );
+      );\
     } on FirebaseAuthException catch (e) {
       setState(() => isLoading = false);
 

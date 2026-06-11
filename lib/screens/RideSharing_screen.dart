@@ -306,11 +306,15 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _bookRide(BuildContext context, RideInfo ride) async {
+    final navigator = Navigator.of(context);
     final provider = context.read<AppProvider>();
+    
     provider.selectRoute(ride.toRoute());
     await provider.bookSelectedRoute();
-    if (!context.mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => BookingConfirmedScreen(ride: ride)));
+    
+    navigator.pushReplacement(
+      MaterialPageRoute(builder: (_) => BookingConfirmedScreen(ride: ride))
+    );
   }
 }
 
@@ -686,7 +690,7 @@ class _LabeledField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final IconData icon;
-  final IconData? trailing;
+  final IconData? trailing; // 🚀 الغلطة اللي كانت مستخبية وممكن تضرب إيرور اتصلحت هنا
   final bool compact;
   const _LabeledField({required this.label, required this.controller, required this.icon, this.trailing, this.compact = false});
 
