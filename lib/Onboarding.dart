@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'Login_Screen.dart';
 
 void main() {
@@ -173,7 +174,15 @@ class OnboardingContent extends StatelessWidget {
         children: [
           Expanded(
           flex: 3,
-          child: _OnboardingIllustration(imagePath: data.imagePath),
+          child: data.imagePath.endsWith('.svg')
+                 ? SvgPicture.asset(
+                 data.imagePath,
+                 fit: BoxFit.contain,
+                 )
+                  : Image.asset(
+                    data.imagePath,
+                   fit: BoxFit.contain,
+                    ),
                ),
           const SizedBox(height: 40),
           Text(
@@ -199,29 +208,6 @@ class OnboardingContent extends StatelessWidget {
           const Spacer(),
         ],
       ),
-    );
-  }
-}
-
-class _OnboardingIllustration extends StatelessWidget {
-  final String imagePath;
-  const _OnboardingIllustration({required this.imagePath});
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = imagePath.contains('Carpool')
-        ? Icons.groups_2_rounded
-        : imagePath.contains('waslny')
-            ? Icons.route_rounded
-            : Icons.explore_rounded;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFEAF0FF), Color(0xFFF5ECFF)]),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Icon(icon, size: 132, color: const Color(0xFF4A4ED7)),
     );
   }
 }

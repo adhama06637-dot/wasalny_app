@@ -128,7 +128,10 @@ void initState() {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: SafeArea(
+       top: false,
+       child: _buildBottomNavigationBar(),
+      ),
     );
   }
 
@@ -539,7 +542,7 @@ void initState() {
         GestureDetector(
           onTap: () {},
           child: _buildNavItem(
-            icon: Icons.home_filled,
+            icon: Icons.home_outlined,
             label: 'Home',
             isActive: true,
           ),
@@ -556,7 +559,7 @@ void initState() {
             );
           },
           child: _buildNavItem(
-            icon: Icons.local_taxi_outlined,
+            icon: Icons.directions_car_outlined,
             label: 'Ride Sharing',
             isActive: false,
           ),
@@ -589,7 +592,7 @@ GestureDetector(
             );
           },
           child: _buildNavItem(
-            icon: Icons.person_outline,
+            icon: Icons.person,
             label: 'Profile',
             isActive: false,
           ),

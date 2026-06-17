@@ -49,7 +49,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     try {
       // 1️⃣ Create user in Firebase Auth
       UserCredential userCredential =
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
@@ -58,14 +58,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
       String uid = userCredential.user!.uid;
 
       // 3️⃣ Save data in Firestore
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        "uid": uid,
-        "firstName": firstNameController.text.trim(),
-        "lastName": lastNameController.text.trim(),
-        "phone": phoneController.text.trim(),
-        "email": emailController.text.trim(),
-        "createdAt": FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance
+    .collection('users')
+    .doc(userCredential.user!.uid)
+    .set({
+  "uid": userCredential.user!.uid,
+  "firstName": firstNameController.text.trim(),
+  "lastName": lastNameController.text.trim(),
+  "phone": phoneController.text.trim(),
+  "email": emailController.text.trim(),
+  "createdAt": FieldValue.serverTimestamp(),
+});
+
+      await FirebaseAuth.instance.signOut();
 
       setState(() => isLoading = false);
 
@@ -88,7 +93,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ],
         ),
-      );\
+      );
     } on FirebaseAuthException catch (e) {
       setState(() => isLoading = false);
 
@@ -176,11 +181,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           child: Center(
                             child: isLoading
                                 ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                    color: Colors.white)
                                 : const Text(
-                              "Sign Up",
-                              style: TextStyle(color: Colors.white),
-                            ),
+                                    "Sign Up",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                           ),
                         ),
                       ),
