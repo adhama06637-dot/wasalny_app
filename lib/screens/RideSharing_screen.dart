@@ -5,7 +5,7 @@ import 'package:wasalny_app/Home.dart';
 import '../api_service.dart';
 import '../models/route.dart' as app_route;
 import '../providers/app_provider.dart';
-import '../Services/ride_service.dart'; // 🚀 استدعاء الذكاء بتاع السعر
+import '../Services/ride_service.dart'; 
 import 'app_colors.dart';
 import 'live_route_screen.dart';
 import 'my_rides_screen.dart';
@@ -23,7 +23,6 @@ class _RideSharingScreenState extends State<RideSharingScreen> {
   final dateController = TextEditingController(text: 'Today, 20 May');
   final timeController = TextEditingController(text: '10:00 AM');
 
-  // متغيرات المحطات الديناميكية
   List<String> _locations = ['Loading...'];
   String _fromValue = 'Loading...';
   String _toValue = 'Loading...';
@@ -34,19 +33,24 @@ class _RideSharingScreenState extends State<RideSharingScreen> {
     _fetchStations();
   }
 
-  // 🚀 دالة جلب المحطات من الـ API
   Future<void> _fetchStations() async {
-    final stations = await ApiService.getStations();
+    final fetchedStations = await ApiService.getStations();
     if (!mounted) return;
 
-    if (stations.isNotEmpty) {
+    if (fetchedStations.isNotEmpty) {
       setState(() {
-        _locations = stations;
-        final provider = context.read<AppProvider>();
+        // 🚀 التعديل هنا: ضفنا "All" عشان نعرض كل الرحلات
+        _locations = ['All', ...fetchedStations];
         
-        _fromValue = stations.contains(provider.from) ? provider.from : stations[0];
-        _toValue = stations.contains(provider.to) ? provider.to : (stations.length > 1 ? stations[1] : stations[0]);
+        // 🚀 خلينا البداية والنهاية الافتراضية "All"
+        _fromValue = 'All';
+        _toValue = 'All';
       });
+      
+      // 🚀 التعديل هنا: بنطلب من الـ Provider يجيب كل الرحلات فوراً أول ما الشاشة تفتح
+      final provider = context.read<AppProvider>();
+      provider.searchRoutes(from: 'All', to: 'All', transport: provider.selectedTransport);
+
     } else {
       setState(() {
         _locations = ['No Data Available'];
@@ -107,7 +111,6 @@ class _RideSharingScreenState extends State<RideSharingScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
         children: [
-          // 🚀 Dropdown للـ From
           _LabeledDropdown(
             label: 'From',
             value: _fromValue,
@@ -118,7 +121,6 @@ class _RideSharingScreenState extends State<RideSharingScreen> {
             onChanged: (val) => setState(() => _fromValue = val!),
           ),
           const SizedBox(height: 12),
-          // 🚀 Dropdown للـ To
           _LabeledDropdown(
             label: 'To',
             value: _toValue,
@@ -374,7 +376,6 @@ class BookingConfirmedScreen extends StatelessWidget {
   void _snack(BuildContext context, String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 }
 
-// 🚀 المربع بتاع السعر الذكي مربوط هنا
 class BookingSuccessDialog extends StatelessWidget {
   final RideInfo ride;
   const BookingSuccessDialog({super.key, required this.ride});
@@ -399,7 +400,6 @@ class BookingSuccessDialog extends StatelessWidget {
           _DialogInfo(icon: Icons.calendar_today_rounded, text: ride.date),
           _DialogInfo(icon: Icons.access_time_rounded, text: ride.time),
           
-          // 🚀 استدعاء الـ Price Engine
           _DialogInfo(icon: Icons.attach_money_rounded, text: '${RideService.calculateRidePrice(distanceKm: ride.distanceKm).toStringAsFixed(0)} EGP'),
           
           const SizedBox(height: 22),
@@ -576,7 +576,7 @@ class RideInfo {
 
   factory RideInfo.fromRoute(app_route.Route route) {
     final female = route.female_only;
-    final driver = route.driver_name ?? 'Driver';
+    final driver = route.driver_name ?? 'Captain'; // الاسم هيتاخد مباشر هنا
     final minutes = int.tryParse(RegExp(r'(\d+)').firstMatch(route.time)?.group(1) ?? '') ?? 0;
     final estimatedDistance = (minutes / 60.0) * 30.0;
     final finalPrice = route.cost > 0
@@ -614,7 +614,6 @@ extension RideTypeMeta on RideType {
   Color get color => this == RideType.female ? const Color(0xFFE84B72) : this == RideType.male ? AppColors.primary : AppColors.secondary;
   Color get bg => this == RideType.female ? const Color(0xFFFFF0F4) : this == RideType.male ? const Color(0xFFF1F4FF) : const Color(0xFFF6F0FF);
 }
-
 
 class _LabeledDropdown extends StatelessWidget {
   final String label;
@@ -690,7 +689,7 @@ class _LabeledField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final IconData icon;
-  final IconData? trailing; // 🚀 الغلطة اللي كانت مستخبية وممكن تضرب إيرور اتصلحت هنا
+  final IconData? trailing; 
   final bool compact;
   const _LabeledField({required this.label, required this.controller, required this.icon, this.trailing, this.compact = false});
 

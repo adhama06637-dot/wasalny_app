@@ -64,18 +64,10 @@ class AppProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
+    // 🚀 لغينا الطلب المباشر من الفايربيز هنا، وخلينا البايثون هو العقل الوحيد للسيستم 
     final apiRoutes = await api.getRoutes(from: from, to: to, transport: selectedTransport);
-    final firestoreRides = await rideService.getRides();
-    final firestoreRoutes = firestoreRides.map(app_route.Route.fromJson).where((route) {
-      final startMatches = from.trim().isEmpty || route.start.toLowerCase().contains(from.trim().toLowerCase());
-      final endMatches = to.trim().isEmpty || route.end.toLowerCase().contains(to.trim().toLowerCase());
-      return startMatches && endMatches;
-    }).toList();
     
     routes = [...apiRoutes];
-    for (final route in firestoreRoutes) {
-      if (!routes.any((item) => item.id == route.id)) routes.add(route);
-    }
     
     final matchedRoutes = routes.where((route) {
       final matchType = selectedTransport == 'all' || route.transport_type == selectedTransport;

@@ -1,6 +1,10 @@
 import '../services/ride_service.dart';
 import 'package:flutter/material.dart';
 import 'Map.dart'; 
+import 'screens/my_rides_screen.dart';
+import 'package:wasalny_app/Profile.dart';
+import 'package:wasalny_app/Home.dart';
+import 'screens/RideSharing_screen.dart';
 
 // ══════════════════════════════════════════════
 // شاشة المقارنة الرئيسية
@@ -17,7 +21,6 @@ class CompareScreen extends StatefulWidget {
 class _CompareScreenState extends State<CompareScreen> {
   int _selectedIndex = 0;
 
-  // 🛠️ دالة تظبيط الوقت (ساعات ودقايق) مع حماية ضد الكسور
   String _formatDuration(dynamic minutesData) {
     if (minutesData == null || minutesData.toString().isEmpty) return '--';
     double? parsedValue = double.tryParse(minutesData.toString());
@@ -36,6 +39,21 @@ class _CompareScreenState extends State<CompareScreen> {
   String _formatPath(List<dynamic>? path) {
     if (path == null || path.isEmpty) return 'No path';
     return path.join(' → ');
+  }
+
+  String _getTransportType(Map<String, dynamic>? route) {
+    if (route == null) return 'Ride';
+    final steps = route['steps'] as List<dynamic>?;
+    if (steps == null || steps.isEmpty) return 'Ride';
+    
+    final types = steps
+        .map((s) => s['type']?.toString().toLowerCase() ?? '')
+        .where((t) => t.isNotEmpty)
+        .toSet()
+        .toList();
+        
+    if (types.isEmpty) return 'Ride';
+    return types.map((t) => t[0].toUpperCase() + t.substring(1)).join(' + ');
   }
 
   @override
@@ -59,8 +77,7 @@ class _CompareScreenState extends State<CompareScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Route Options',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('Route Options', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -68,36 +85,24 @@ class _CompareScreenState extends State<CompareScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Toggle Compare/Details
-            Container(
-              decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                          color: const Color(0xFF6C63FF),
-                          borderRadius: BorderRadius.circular(12)),
-                      child: const Center(
-                          child: Text('Compare',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold))),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Center(
-                        child: Text('Details',
-                            style: TextStyle(
-                                color: Colors.black54,
-                                fontWeight: FontWeight.bold))),
-                  ),
-                ],
-              ),
-            ),
+           Container(
+  width: double.infinity,
+  padding: const EdgeInsets.symmetric(vertical: 12),
+  decoration: BoxDecoration(
+    color: const Color(0xFF6C63FF),
+    borderRadius: BorderRadius.circular(12),
+  ),
+  child: const Center(
+    child: Text(
+      'Compare',
+      style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+    ),
+  ),
+),
             const SizedBox(height: 20),
 
             if (tip.isNotEmpty)
@@ -113,11 +118,7 @@ class _CompareScreenState extends State<CompareScreen> {
                   children: [
                     const Icon(Icons.info_outline, color: Color(0xFF303099)),
                     const SizedBox(width: 10),
-                    Expanded(
-                        child: Text(tip,
-                            style: const TextStyle(
-                                color: Color(0xFF303099),
-                                fontWeight: FontWeight.w500))),
+                    Expanded(child: Text(tip, style: const TextStyle(color: Color(0xFF303099), fontWeight: FontWeight.w500))),
                   ],
                 ),
               ),
@@ -126,7 +127,6 @@ class _CompareScreenState extends State<CompareScreen> {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // كارت الأسرع
             if (fastest != null) ...[
               RouteOptionCard(
                 badgeText: 'Fastest ⚡',
@@ -134,15 +134,14 @@ class _CompareScreenState extends State<CompareScreen> {
                 icon: Icons.bolt,
                 iconColor: const Color(0xFF1565C0),
                 time: _formatDuration(fastest['total_time_min']),
+                transportType: _getTransportType(fastest),
                 price: '${fastest['total_price_egp']} EGP',
                 path: _formatPath(fastest['path'] as List<dynamic>?),
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => RouteDetailsScreen(routeData: fastest))),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RouteDetailsScreen(routeData: fastest))),
               ),
               const SizedBox(height: 12),
             ],
 
-            // كارت الأرخص
             if (!samePath && cheapest != null) ...[
               RouteOptionCard(
                 badgeText: 'Cheapest 💰',
@@ -150,10 +149,10 @@ class _CompareScreenState extends State<CompareScreen> {
                 icon: Icons.directions_bus,
                 iconColor: const Color(0xFF6C63FF),
                 time: _formatDuration(cheapest['total_time_min']),
+                transportType: _getTransportType(cheapest),
                 price: '${cheapest['total_price_egp']} EGP',
                 path: _formatPath(cheapest['path'] as List<dynamic>?),
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => RouteDetailsScreen(routeData: cheapest))),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RouteDetailsScreen(routeData: cheapest))),
               ),
               const SizedBox(height: 12),
             ],
@@ -179,10 +178,8 @@ class _CompareScreenState extends State<CompareScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('No shared rides available',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                          Text('Check back later',
-                              style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          Text('No shared rides available', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                          Text('Check back later', style: TextStyle(color: Colors.grey, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -195,16 +192,62 @@ class _CompareScreenState extends State<CompareScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (i) => setState(() => _selectedIndex = i),
-        selectedItemColor: const Color(0xFF6C63FF),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Ride'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
+  currentIndex: _selectedIndex,
+  type: BottomNavigationBarType.fixed,
+  selectedItemColor: const Color(0xFF6C63FF),
+  unselectedItemColor: Colors.grey,
+  onTap: (index) {
+    setState(() => _selectedIndex = index);
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+        break;
+
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RideSharingScreen()),
+        );
+        break;
+
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MyRidesScreen()),
+        );
+        break;
+
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
+    }
+  },
+  items: const [
+    BottomNavigationBarItem(
+      icon: Icon(Icons.home_outlined),
+      label: 'Home',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.directions_car_outlined),
+      label: 'Ride',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.list_alt_outlined),
+      label: 'My Rides',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.person),
+      label: 'Profile',
+    ),
+  ],
+),
     );
   }
 }
@@ -218,6 +261,7 @@ class RouteOptionCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String time;
+  final String transportType; 
   final String price;
   final String path;
   final VoidCallback onTap;
@@ -229,6 +273,7 @@ class RouteOptionCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.time,
+    required this.transportType, 
     required this.price,
     required this.path,
     required this.onTap,
@@ -262,11 +307,24 @@ class RouteOptionCard extends StatelessWidget {
                   Row(children: [
                     Icon(Icons.emoji_events, color: badgeColor, size: 16),
                     const SizedBox(width: 4),
-                    Text(badgeText,
-                        style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(badgeText, style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold)),
                   ]),
                   const SizedBox(height: 6),
-                  Text(time, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Text(time, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(transportType, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54)),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 4),
                   Text(path, style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                 ],
@@ -290,15 +348,12 @@ class SharedRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-   
-
-double distanceKm = (ride['distance_km'] ?? 0).toDouble();
-double calculatedPrice = (distanceKm * 2.5) + 5.0;
+    double distanceKm = (ride['distance_km'] ?? 0).toDouble();
+    double calculatedPrice = (distanceKm * 2.5) + 5.0;
     final seats          = ride['available_seats']?.toString() ?? '--';
     final driverName     = ride['driver_id']?.toString() ?? 'Driver';
     final genderPref     = ride['gender_preference']?.toString() ?? 'any';
     
-    // تظبيط وقت الرايد شيرينج كمان
     double? parsedValue = double.tryParse(ride['time_min']?.toString() ?? '');
     String timeStr = '--';
     if (parsedValue != null) {
@@ -362,13 +417,7 @@ double calculatedPrice = (distanceKm * 2.5) + 5.0;
                   ],
                 ),
               ),
-              Text(
-  '${calculatedPrice.toStringAsFixed(0)} EGP',
-  style: const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-  ),
-)
+              Text('${calculatedPrice.toStringAsFixed(0)} EGP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
             ],
           ),
           const SizedBox(height: 12),
@@ -432,7 +481,6 @@ class RouteDetailsScreen extends StatelessWidget {
 
   const RouteDetailsScreen({super.key, required this.routeData});
 
-  // نفس دالة الوقت هنا كمان
   String _formatDuration(dynamic minutesData) {
     if (minutesData == null || minutesData.toString().isEmpty) return '--';
     double? parsedValue = double.tryParse(minutesData.toString());
@@ -454,6 +502,8 @@ class RouteDetailsScreen extends StatelessWidget {
         return {'icon': Icons.directions_bus, 'color': const Color(0xFF2E7D32)};
       case 'microbus':
         return {'icon': Icons.airport_shuttle, 'color': const Color(0xFFE65100)};
+      case 'metro':
+        return {'icon': Icons.subway_outlined, 'color': const Color(0xFFE53935)};
       default:
         return {'icon': Icons.directions_car, 'color': const Color(0xFF1565C0)};
     }
@@ -475,8 +525,7 @@ class RouteDetailsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Route Details',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('Route Details', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
 
@@ -485,21 +534,12 @@ class RouteDetailsScreen extends StatelessWidget {
         child: SizedBox(
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => MapScreen(routeData: routeData)),
-            ),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen(routeData: routeData))),
             icon: const Icon(Icons.map, color: Colors.white),
-            label: const Text('Select & Show on Map',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+            label: const Text('Select & Show on Map', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00E676),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ),
@@ -511,9 +551,7 @@ class RouteDetailsScreen extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                  color: const Color(0xFFEAE8FF),
-                  borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: const Color(0xFFEAE8FF), borderRadius: BorderRadius.circular(20)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -530,15 +568,11 @@ class RouteDetailsScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200)),
+                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red.shade200)),
                 child: Row(children: const [
                   Icon(Icons.warning_amber, color: Colors.red),
                   SizedBox(width: 8),
-                  Text('🚨 Rush Hour — Expect delays',
-                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                  Text('🚨 Rush Hour — Expect delays', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
                 ]),
               ),
             ],
@@ -546,8 +580,7 @@ class RouteDetailsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Your Route',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text('Your Route', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 16),
 
@@ -589,7 +622,7 @@ class RouteDetailsScreen extends StatelessWidget {
                 final from    = step['from']?.toString() ?? '';
                 final to      = step['to']?.toString() ?? '';
                 final type    = step['type']?.toString() ?? '';
-                final timeMin = _formatDuration(step['time_min']); // تطبيق دالة الوقت هنا كمان
+                final timeMin = _formatDuration(step['time_min']); 
                 final price   = step['price_egp']?.toString() ?? '--';
                 final style   = _getTransportStyle(type);
 
@@ -605,7 +638,7 @@ class RouteDetailsScreen extends StatelessWidget {
                           child: Center(child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
                         ),
                         if (index < steps.length - 1)
-                          Container(width: 2, height: 30, color: Colors.grey.shade300),
+                          Container(width: 2, height: 110, color: Colors.grey.shade300), 
                       ],
                     ),
                     const SizedBox(width: 16),
@@ -629,18 +662,58 @@ class RouteDetailsScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text('from $from', style: const TextStyle(color: Color(0xFF303099), fontSize: 13)),
-                            Text('to $to', style: const TextStyle(color: Color(0xFF303099), fontSize: 13)),
-                            const SizedBox(height: 8),
+                            Text('from $from', style: const TextStyle(color: Color(0xFF303099), fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text('to $to', style: const TextStyle(color: Color(0xFF303099), fontSize: 13, fontWeight: FontWeight.w600)),
+                            
+                            // 🚀 مربع التعليمات الذكي الجديد
+                            const SizedBox(height: 12),
+                            Builder(
+                              builder: (context) {
+                                // 🚀 بياخد التعليمات مباشرة من السيرفر ولو مش موجودة بيحط جملة منطقية
+                                String instruction = step['instruction']?.toString() ?? '';
+                                if (instruction.isEmpty) {
+                                  instruction = 'Board the $type from $from heading towards $to.';
+                                }
+
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: (style['color'] as Color).withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: (style['color'] as Color).withOpacity(0.2)),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(Icons.near_me_rounded, size: 18, color: style['color'] as Color),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          instruction,
+                                          style: TextStyle(
+                                            fontSize: 13, 
+                                            color: (style['color'] as Color).withOpacity(0.9), 
+                                            height: 1.4,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            ),
+                            const SizedBox(height: 14),
+
                             Row(
                               children: [
                                 const Icon(Icons.access_time, size: 14, color: Colors.grey),
                                 const SizedBox(width: 4),
-                                Text(timeMin, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                Text(timeMin, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
                                 const SizedBox(width: 16),
                                 const Icon(Icons.attach_money, size: 14, color: Colors.grey),
                                 const SizedBox(width: 4),
-                                Text('$price EGP', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                Text('$price EGP', style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ],

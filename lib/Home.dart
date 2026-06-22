@@ -8,9 +8,6 @@ import 'api_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/my_rides_screen.dart';
 
-
-
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,77 +16,102 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // 🚀 المتغير اللي بيتحكم في شاشة التحميل
+  bool _isLoading = false;
+  final List<Map<String, dynamic>> _banners = [
+  {
+    "title": "Heavy traffic on\nRamses Street",
+    "subtitle": "Expect +15 min delay",
+    "icon": Icons.traffic_rounded,
+    "tag": "Traffic Update",
+    "live": true,
+    "colors": [Color(0xFF6C5DD3), Color.fromARGB(255, 67, 80, 169)],
+  },
+  {
+    "title": "Share your ride 🚗",
+    "subtitle": "Save time, money and fuel",
+    "icon": Icons.groups_rounded,
+    "tag": "Ride Sharing",
+    "colors": [Color.fromARGB(255, 91, 185, 98), Color.fromARGB(255, 58, 234, 114)],
+  },
+  {
+    "title": "Smart Routes 🛣️",
+    "subtitle": "Choose the Best Route Discover faster and more convenient trips",
+    "icon": Icons.alt_route_rounded,
+    "tag": "Smart Routes",
+    "colors": [Color.fromARGB(255, 11, 25, 112), Color.fromARGB(255, 99, 116, 200)],
+   
+    
+  },
+];
 
-    Future<void> _fetchStations() async {
-  final stations = await ApiService.getStations();
+  Future<void> _fetchStations() async {
+    final stations = await ApiService.getStations();
 
-  if (stations.isNotEmpty && mounted) {
-    setState(() {
-      _locations = stations;
-      _fromValue = stations[0];
-      _toValue = stations.length > 1 ? stations[1] : stations[0];
-    });
-  }
-}
-
-String _getFirstName() {
-  final user = FirebaseAuth.instance.currentUser;
-
-  if (user != null) {
-    if (user.displayName != null &&
-        user.displayName!.isNotEmpty) {
-      return user.displayName!.split(' ')[0];
+    if (stations.isNotEmpty && mounted) {
+      setState(() {
+        _locations = stations;
+        _fromValue = stations[0];
+        _toValue = stations.length > 1 ? stations[1] : stations[0];
+      });
     }
+  }
 
-    if (user.email != null) {
-      String name = user.email!.split('@')[0];
-      name = name.replaceAll(RegExp(r'[0-9]'), '');
+  String _getFirstName() {
+    final user = FirebaseAuth.instance.currentUser;
 
-      if (name.isNotEmpty) {
-        return name[0].toUpperCase() +
-            name.substring(1).toLowerCase();
+    if (user != null) {
+      if (user.displayName != null && user.displayName!.isNotEmpty) {
+        return user.displayName!.split(' ')[0];
+      }
+
+      if (user.email != null) {
+        String name = user.email!.split('@')[0];
+        name = name.replaceAll(RegExp(r'[0-9]'), '');
+
+        if (name.isNotEmpty) {
+          return name[0].toUpperCase() + name.substring(1).toLowerCase();
+        }
       }
     }
-  }
 
-  return 'User';
-}
+    return 'User';
+  }
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _timer;
 
-  
- String _fromValue = 'Loading...';
- String _toValue = 'Loading...';
+  String _fromValue = 'Loading...';
+  String _toValue = 'Loading...';
 
   List<String> _locations = ['Loading...'];
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  _fetchStations();
+    _fetchStations();
 
-  _timer = Timer.periodic(
-    const Duration(seconds: 4),
-    (Timer timer) {
-      if (_currentPage < 2) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
+    _timer = Timer.periodic(
+      const Duration(seconds: 4),
+      (Timer timer) {
+        if (_currentPage < 2) {
+          _currentPage++;
+        } else {
+          _currentPage = 0;
+        }
 
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeIn,
-        );
-      }
-    },
-  );
-}
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeIn,
+          );
+        }
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -97,7 +119,6 @@ void initState() {
     _pageController.dispose();
     super.dispose();
   }
-
 
   void _swapLocations() {
     setState(() {
@@ -111,26 +132,47 @@ void initState() {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildBannerSlider(),
-              const SizedBox(height: 20),
-              _buildTitleAndFavorites(context),
-              const SizedBox(height: 15),
-              _buildFormCard(context),
-            ],
-          ),
-        ),
-      ),
+      // 🚀 لو بيحمل، اعرض شاشة الـ AI الروشة، لو مش بيحمل اعرض الشاشة العادية
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  CircularProgressIndicator(
+                    color: Color(0xFF6C5DD3),
+                  ),
+                  SizedBox(height: 24),
+                  Text(
+                    "AI is finding the best routes for you... 🚀",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E1E2D),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 20),
+                    _buildBannerSlider(),
+                    const SizedBox(height: 20),
+                    _buildTitleAndFavorites(context),
+                    const SizedBox(height: 15),
+                    _buildFormCard(context),
+                  ],
+                ),
+              ),
+            ),
       bottomNavigationBar: SafeArea(
-       top: false,
-       child: _buildBottomNavigationBar(),
+        top: false,
+        child: _buildBottomNavigationBar(),
       ),
     );
   }
@@ -142,11 +184,15 @@ void initState() {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${_getFirstName()} 👋',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E1E2D)),
-            ),
-            SizedBox(height: 4),
             Text(
+              '${_getFirstName()} 👋',
+              style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E1E2D)),
+            ),
+            const SizedBox(height: 4),
+            const Text(
               'Good afternoon!',
               style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
@@ -165,15 +211,24 @@ void initState() {
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF6C5DD3)),
-            onPressed: () {},
-          ),
+  icon: const Icon(
+    Icons.notifications_none_rounded,
+    color: Color(0xFF6C5DD3),
+  ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NotificationsScreen(),
+      ),
+    );
+  },
+),
         ),
       ],
     );
   }
 
- 
   Widget _buildBannerSlider() {
     return Column(
       children: [
@@ -186,10 +241,10 @@ void initState() {
                 _currentPage = page;
               });
             },
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              return _buildBannerCard();
-            },
+           itemCount: _banners.length,
+itemBuilder: (context, index) {
+  return _buildBannerCard(index);
+},
           ),
         ),
         const SizedBox(height: 12),
@@ -200,31 +255,29 @@ void initState() {
       ],
     );
   }
-
-
-  Widget _buildBannerCard() {
+Widget _buildBannerCard(int index) {
+  final banner = _banners[index];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: LinearGradient(
+  colors: List<Color>.from(banner["colors"]),
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          
           Container(
             width: 70,
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.2),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Center(
-              child: Icon(Icons.traffic_rounded, size: 50, color: Colors.white),
+            child: Center(
+              child: Icon(banner ["icon"] ,size: 50, color: Colors.white),
             ),
           ),
           const SizedBox(width: 16),
@@ -237,21 +290,27 @@ void initState() {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
-                        children: const [
-                          Icon(Icons.directions_car, color: Colors.white, size: 12),
-                          SizedBox(width: 4),
-                          Text('Traffic Update', style: TextStyle(color: Colors.white, fontSize: 10)),
+                        children: [
+                          const Icon(Icons.directions_car,
+                              color: Colors.white, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            banner["tag"],
+                            style:
+                                const TextStyle(color: Colors.white, fontSize: 10)),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.redAccent.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
@@ -260,19 +319,24 @@ void initState() {
                         children: const [
                           CircleAvatar(radius: 3, backgroundColor: Colors.red),
                           SizedBox(width: 4),
-                          Text('Live', style: TextStyle(color: Colors.white, fontSize: 10)),
+                          Text('Live',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 10)),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Heavy traffic on\nRamses Street',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                Text(banner["title"],
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
                 ),
                 const SizedBox(height: 4),
-                const Text('Expect +15 min delay', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(banner["subtitle"],
+                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),
@@ -281,7 +345,6 @@ void initState() {
     );
   }
 
-
   Widget _buildDot({required int index}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -289,7 +352,9 @@ void initState() {
       height: 8,
       width: _currentPage == index ? 8 : 8,
       decoration: BoxDecoration(
-        color: _currentPage == index ? const Color(0xFF6C5DD3) : Colors.grey.withOpacity(0.3),
+        color: _currentPage == index
+            ? const Color(0xFF6C5DD3)
+            : Colors.grey.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -301,7 +366,10 @@ void initState() {
       children: [
         const Text(
           'Where would you like to go?',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E1E2D)),
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E1E2D)),
         ),
         InkWell(
           onTap: () {
@@ -323,7 +391,8 @@ void initState() {
               children: const [
                 Icon(Icons.star_border, color: Color(0xFF6C5DD3), size: 16),
                 SizedBox(width: 4),
-                Text('Favorites', style: TextStyle(color: Color(0xFF6C5DD3), fontSize: 12)),
+                Text('Favorites',
+                    style: TextStyle(color: Color(0xFF6C5DD3), fontSize: 12)),
               ],
             ),
           ),
@@ -349,18 +418,20 @@ void initState() {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('From', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const Text('From',
+              style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 8),
           _buildDropdownField(
             value: _fromValue,
             onChanged: (val) => setState(() => _fromValue = val!),
           ),
-          
-         
           Stack(
             alignment: Alignment.center,
             children: [
-              Divider(color: Colors.grey.withOpacity(0.2), thickness: 1, height: 40),
+              Divider(
+                  color: Colors.grey.withOpacity(0.2),
+                  thickness: 1,
+                  height: 40),
               GestureDetector(
                 onTap: _swapLocations,
                 child: Container(
@@ -370,19 +441,18 @@ void initState() {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.grey.withOpacity(0.1)),
                   ),
-                  child: const Icon(Icons.swap_vert, color: Color(0xFF6C5DD3), size: 20),
+                  child: const Icon(Icons.swap_vert,
+                      color: Color(0xFF6C5DD3), size: 20),
                 ),
               ),
             ],
           ),
-          
           const Text('To', style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 8),
           _buildDropdownField(
             value: _toValue,
             onChanged: (val) => setState(() => _toValue = val!),
           ),
-          
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -391,14 +461,18 @@ void initState() {
                 children: [
                   Icon(Icons.history, color: Colors.grey, size: 16),
                   SizedBox(width: 6),
-                  Text('Popular Destinations', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text('Popular Destinations',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
-              Text('View all', style: TextStyle(color: Color(0xFF6C5DD3), fontSize: 12, fontWeight: FontWeight.bold)),
+              Text('View all',
+                  style: TextStyle(
+                      color: Color(0xFF6C5DD3),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 12),
-         
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -408,40 +482,52 @@ void initState() {
             ],
           ),
           const SizedBox(height: 24),
-          
-          
           SizedBox(
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
-             onPressed: () async {
+              onPressed: () async {
+                // 1. شغل التحميل
+                setState(() {
+                  _isLoading = true;
+                });
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Searching for the best routes... 🚀',
-      ),
-    ),
-  );
+                try {
+                  // 2. اطلب الـ API
+                  final compareData = await ApiService.getCompareRoutes(
+                    _fromValue,
+                    _toValue,
+                  );
 
-  final compareData =
-      await ApiService.getCompareRoutes(
-    _fromValue,
-    _toValue,
-  );
-
-  if (context.mounted) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            CompareScreen(
-          compareData: compareData,
-        ),
-      ),
-    );
-  }
-},
+                  // 3. لو الشاشة لسه مفتوحة والداتا جت، روح لشاشة النتيجة
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CompareScreen(
+                          compareData: compareData,
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to find routes. Please try again.'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                } finally {
+                  // 4. اقفل التحميل في كل الحالات
+                  if (mounted) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                  }
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6C5DD3),
                 shape: RoundedRectangleBorder(
@@ -452,9 +538,13 @@ void initState() {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Icon(Icons.share_arrival_time_outlined, color: Colors.white),
+                  Icon(Icons.search, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Find Route', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Find Route',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Icon(Icons.chevron_right, color: Colors.white),
                 ],
@@ -466,8 +556,8 @@ void initState() {
     );
   }
 
-
-  Widget _buildDropdownField({required String value, required ValueChanged<String?> onChanged}) {
+  Widget _buildDropdownField(
+      {required String value, required ValueChanged<String?> onChanged}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -485,9 +575,13 @@ void initState() {
               value: location,
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, color: Color(0xFF6C5DD3), size: 20),
+                  const Icon(Icons.location_on,
+                      color: Color(0xFF6C5DD3), size: 20),
                   const SizedBox(width: 12),
-                  Text(location, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1E1E2D))),
+                  Text(location,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E1E2D))),
                 ],
               ),
             );
@@ -510,103 +604,104 @@ void initState() {
         children: [
           const Icon(Icons.location_on_outlined, color: Colors.grey, size: 14),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF1E1E2D))),
+          Text(label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF1E1E2D))),
         ],
       ),
     );
   }
 
-  
   Widget _buildBottomNavigationBar() {
-  return Container(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(30),
-        topRight: Radius.circular(30),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 20,
-          offset: const Offset(0, -5),
-        ),
-      ],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-
-        // Home
-        GestureDetector(
-          onTap: () {},
-          child: _buildNavItem(
-            icon: Icons.home_outlined,
-            label: 'Home',
-            isActive: true,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          // Home
+          GestureDetector(
+            onTap: () {},
+            child: _buildNavItem(
+              icon: Icons.home_outlined,
+              label: 'Home',
+              isActive: true,
+            ),
           ),
-        ),
 
-        // Ride Sharing
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const RideSharingScreen(),
-              ),
-            );
-          },
-          child: _buildNavItem(
-            icon: Icons.directions_car_outlined,
-            label: 'Ride Sharing',
-            isActive: false,
+          // Ride Sharing
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RideSharingScreen(),
+                ),
+              );
+            },
+            child: _buildNavItem(
+              icon: Icons.directions_car_outlined,
+              label: 'Ride Sharing',
+              isActive: false,
+            ),
           ),
-        ),
-         
-         // My Rides
-GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MyRidesScreen(),
+
+          // My Rides
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyRidesScreen(),
+                ),
+              );
+            },
+            child: _buildNavItem(
+              icon: Icons.list_alt_outlined,
+              label: 'My Rides',
+              isActive: false,
+            ),
+          ),
+          // Profile
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfilePage(),
+                ),
+              );
+            },
+            child: _buildNavItem(
+              icon: Icons.person,
+              label: 'Profile',
+              isActive: false,
+            ),
+          ),
+        ],
       ),
     );
-  },
-  child: _buildNavItem(
-    icon: Icons.list_alt_outlined,
-    label: 'My Rides',
-    isActive: false,
-  ),
-),
-        // Profile
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProfilePage(),
-              ),
-            );
-          },
-          child: _buildNavItem(
-            icon: Icons.person,
-            label: 'Profile',
-            isActive: false,
-          ),
-        ),
-      ],
-    ),
-  );
-}
+  }
 
-  Widget _buildNavItem({required IconData icon, required String label, required bool isActive}) {
+  Widget _buildNavItem(
+      {required IconData icon, required String label, required bool isActive}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: isActive ? const Color(0xFF6C5DD3) : Colors.grey, size: 28),
+        Icon(icon,
+            color: isActive ? const Color(0xFF6C5DD3) : Colors.grey, size: 28),
         const SizedBox(height: 4),
         Text(
           label,

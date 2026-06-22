@@ -39,32 +39,65 @@ class ApiService {
   }
 
   Future<List<app_route.Route>> getRoutes({String? from, String? to, String? transport}) async {
-    final compareRoutes = await getCompareRoutesAsRoutes(from: from, to: to, transport: transport);
-    final routes = <app_route.Route>[...compareRoutes];
+    final isAll = from?.toLowerCase() == 'all' || to?.toLowerCase() == 'all';
+    final routes = <app_route.Route>[];
 
-    try {
-      final uri = Uri.parse('$baseUrl/routes').replace(queryParameters: {
-        if (from != null && from.isNotEmpty) 'from': from,
-        if (to != null && to.isNotEmpty) 'to': to,
-        if (from != null && from.isNotEmpty) 'start': from,
-        if (to != null && to.isNotEmpty) 'end': to,
-      });
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 8));
-      if (response.statusCode != 200) return routes;
-      final data = jsonDecode(response.body);
-      final list = data is List ? data : (data['routes'] ?? data['data'] ?? data['rides'] ?? []) as List;
-      for (final json in list) {
-        final route = app_route.Route.fromJson(json);
-        if (!routes.any((item) => item.id == route.id)) routes.add(route);
-      }
-    } catch (_) {
-      return routes;
+    // 1. لو مش All، بنجيب المواصلات العامة من سيرش الباك إند
+    if (!isAll) {
+      final compareRoutes = await getCompareRoutesAsRoutes(from: from, to: to, transport: transport);
+      routes.addAll(compareRoutes);
     }
+
+    // 2. بنجيب الرحلات من البايثون وبنركبها يدوي عشان فلاتر ميضربش أرقام مجنونة
+    try {
+      final uri = Uri.parse('$baseUrl/rides').replace(queryParameters: {
+        if (!isAll && from != null && from.isNotEmpty) 'origin': from,
+        if (!isAll && to != null && to.isNotEmpty) 'destination': to,
+      });
+      
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final list = data['rides'] as List? ?? [];
+        
+        for (final raw in list) {
+          final json = Map<String, dynamic>.from(raw);
+          
+          // 🚀 سحب الداتا بشكل آمن جداً وبيفهم كل المسميات
+          final price = json['cost'] ?? json['price_egp'] ?? json['price'] ?? 0;
+          final time = json['time_min'] ?? json['total_time_min'] ?? json['time'] ?? '';
+          final start = json['start'] ?? json['from'] ?? '';
+          final end = json['end'] ?? json['to'] ?? '';
+          final gender = json['gender_preference']?.toString().toLowerCase();
+
+          // 🚀 تركيب الرحلة يدوياً زي السيرش بالظبط عشان نتجنب غباء fromJson
+          final route = app_route.Route(
+            id: json['id']?.toString() ?? 'shared-$start-$end-${DateTime.now().millisecondsSinceEpoch}',
+            start: start,
+            end: end,
+            time: _formatMinutes(time),
+            cost: _toDouble(price),
+            transfers: 0,
+            transport_type: json['transport_type'] ?? 'ride_share',
+            driver_name: json['driver_name']?.toString() ?? 'Driver',
+            driver_rating: _toDouble(json['driver_rating'] ?? 4.8),
+            car_model: json['car_model']?.toString() ?? 'Shared ride',
+            available_seats: _toNullableInt(json['available_seats']) ?? 1,
+            total_seats: _toNullableInt(json['total_seats']) ?? _toNullableInt(json['available_seats']) ?? 1,
+            female_only: gender == 'female' || json['female_only'] == true,
+          );
+
+          if (!routes.any((item) => item.id == route.id)) routes.add(route);
+        }
+      }
+    } catch (_) {}
+    
     return routes;
   }
 
   Future<List<app_route.Route>> getCompareRoutesAsRoutes({String? from, String? to, String? transport}) async {
     if (from == null || from.isEmpty || to == null || to.isEmpty) return [];
+    if (from.toLowerCase() == 'all' || to.toLowerCase() == 'all') return [];
 
     try {
       final uri = Uri.parse('$baseUrl/compare').replace(queryParameters: {
